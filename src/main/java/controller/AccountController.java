@@ -1,7 +1,7 @@
 package controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.inject.Inject;
 import dao.Account;
 import exception.AccountException;
 import exception.UserException;
@@ -16,10 +16,10 @@ public class AccountController {
     private AccountService service;
     private ObjectMapper objectMapper;
 
-    public AccountController() {
-        service = new AccountService();
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
+    @Inject
+    public AccountController(AccountService service, ObjectMapper objectMapper) {
+        this.service = service;
+        this.objectMapper = objectMapper;
     }
 
     public Route createRoute = (request, response) ->

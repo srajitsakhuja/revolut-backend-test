@@ -1,11 +1,8 @@
 package controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import dao.Account;
+import com.google.inject.Inject;
 import dao.User;
-import exception.AccountException;
-import exception.UserException;
 import org.eclipse.jetty.http.MimeTypes;
 import package_.tables.records.UserRecord;
 import service.UserService;
@@ -17,10 +14,10 @@ public class UserController {
     private UserService service;
     private ObjectMapper objectMapper;
 
-    public UserController() {
-        service = new UserService();
-        objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
+    @Inject
+    public UserController(UserService service, ObjectMapper mapper) {
+        this.service = service;
+        objectMapper = mapper;
     }
 
     public Route createRoute = (request, response) ->

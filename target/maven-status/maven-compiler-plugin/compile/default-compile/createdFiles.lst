@@ -1,6 +1,8 @@
+config/ObjectMapperProvider.class
 exception/AccountException.class
 exception/UserException.class
 dao/Account.class
 controller/AccountController.class
+config/UserModule.class
 service/UserService.class
 service/AccountService.class
