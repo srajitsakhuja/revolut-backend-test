@@ -22,14 +22,16 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
     protected DSLContext dslContext;
 
     protected void store(E entity) throws PersistedEntityException {
-        entity.setId(UUID.randomUUID());
+        if (entity.getId() == null) {
+            entity.setId(UUID.randomUUID());
+        }
 
         try {
             process(entity);
             Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
             dslContext = DSL.using(connection, SQLDialect.H2);
-        } catch (Exception e) {
-            throw new PersistedEntityException(e.getCause().getMessage());
+        } catch (SQLException | PersistedEntityException exception) {
+            throw new PersistedEntityException(exception.getMessage());
         }
     }
     protected abstract T findById(UUID id) throws PersistedEntityException;

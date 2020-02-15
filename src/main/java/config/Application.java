@@ -1,3 +1,5 @@
+package config;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import config.Module;
@@ -8,7 +10,7 @@ import static org.eclipse.jetty.http.MimeTypes.Type.APPLICATION_JSON;
 import static spark.Spark.get;
 import static spark.Spark.post;
 
-public class ApplicationClass {
+public class Application {
     public static void main(String[] args) {
         Injector injector = Guice.createInjector(new Module());
 

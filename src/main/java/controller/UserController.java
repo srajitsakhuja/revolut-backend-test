@@ -10,6 +10,8 @@ import spark.Route;
 
 import java.util.UUID;
 
+import static org.eclipse.jetty.http.HttpStatus.*;
+
 public class UserController {
     private UserService service;
     private ObjectMapper objectMapper;
@@ -27,12 +29,11 @@ public class UserController {
             user = objectMapper.readValue(request.body(), User.class);
             service.store(user);
         } catch (Exception e) {
-            response.status(400);
-            System.out.println(e.getCause().getMessage());
-            return "Bad Request!";
+            response.status(BAD_REQUEST_400);
+            return "foo";
         }
 
-        response.status(201);
+        response.status(CREATED_201);
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return objectMapper.writeValueAsString(user);
     };
@@ -48,11 +49,11 @@ public class UserController {
             record = service.findById(id);
             responseBody = objectMapper.writeValueAsString(new User(record));
         } catch (Exception exception) {
-            response.status(500);
+            response.status(NOT_FOUND_404);
             return exception.getMessage();
         }
 
-        response.status(200);
+        response.status(OK_200);
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return responseBody;
     };
