@@ -12,6 +12,8 @@ import spark.Route;
 
 import java.util.UUID;
 
+import static org.eclipse.jetty.http.HttpStatus.*;
+
 public class AccountController {
     private AccountService service;
     private ObjectMapper objectMapper;
@@ -28,15 +30,12 @@ public class AccountController {
         try {
             account = objectMapper.readValue(request.body(), Account.class);
             service.store(account);
-        } catch (AccountException exception) {
-            response.status(500);
-            return exception.getMessage();
         } catch (Exception e) {
-            response.status(400);
+            response.status(BAD_REQUEST_400);
             return "Bad Request!";
         }
 
-        response.status(201);
+        response.status(CREATED_201);
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return objectMapper.writeValueAsString(account);
     };
@@ -48,12 +47,12 @@ public class AccountController {
 
         try {
             record = service.findById(id);
-        } catch (UserException exception) {
-            response.status(500);
+        } catch (Exception exception) {
+            response.status(NOT_FOUND_404);
             return exception.getMessage();
         }
 
-        response.status(200);
+        response.status(OK_200);
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return objectMapper.writeValueAsString(new Account(record));
     };

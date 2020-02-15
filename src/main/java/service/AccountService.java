@@ -4,6 +4,7 @@ import dao.Account;
 import exception.AccountException;
 import exception.PersistedEntityException;
 import exception.UserException;
+import org.jooq.exception.DataAccessException;
 import package_.tables.records.AccountRecord;
 
 import java.time.LocalDateTime;
@@ -29,7 +30,7 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
                     account.isBlocked(),
                     account.getCreationTime(),
                     account.getUserId()).execute();
-        } catch (PersistedEntityException exception) {
+        } catch (DataAccessException | PersistedEntityException exception) {
             throw new AccountException(CREATE_ACCOUNT_EXCEPTION_MESSAGE);
         }
     }

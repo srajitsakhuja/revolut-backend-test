@@ -16,7 +16,7 @@ public class Account extends PersistedEntity{
     LocalDateTime creationTime;
     UUID userId;
 
-    Account() {}
+    public Account() {}
 
     public Account(AccountRecord record) {
         id = record.getId();
