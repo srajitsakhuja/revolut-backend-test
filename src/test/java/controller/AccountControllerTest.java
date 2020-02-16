@@ -118,8 +118,31 @@ public class AccountControllerTest {
 
     @Test
     @DisplayName("Get without ID parameter should return all the records")
-    void foo() {
+    void testGetWithoutIdParameterPasses() {
         get(ACCOUNT_ENDPOINT).then().statusCode(OK.getCode());
     }
 
+    @Test
+    @DisplayName("PUT with valid Account Id should successfully update the record")
+    void testPutPasses() {
+        Account testAccount = new Account();
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
+
+        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+
+        testAccount.setBlocked(true);
+        with().body(testAccount).when().request(Method.PUT, ACCOUNT_ENDPOINT).then().statusCode(OK.getCode());
+    }
+
+    @Test
+    @DisplayName("PUT with invalid User Id should fail")
+    void testPutFailsWithInvalidUserId() {
+        Account testAccount = new Account();
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
+
+        testAccount.setId(UUID.randomUUID());
+        with().body(testAccount).when().request(Method.PUT, ACCOUNT_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+    }
 }

@@ -60,4 +60,18 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
         }
         return accountRecord;
     }
+
+    @Override
+    public void update(Account account) throws PersistedEntityException {
+        try {
+            super.update(account);
+            dslContext.update(ACCOUNT)
+                    .set(ACCOUNT.IS_BLOCKED, account.isBlocked())
+                    .set(ACCOUNT.USER_ID, account.getUserId())
+                    .where(ACCOUNT.ID.eq(account.getId()))
+                    .execute();
+        } catch (DataAccessException | PersistedEntityException exception) {
+            throw new PersistedEntityException(exception.getMessage());
+        }
+    }
 }

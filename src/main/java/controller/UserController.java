@@ -32,7 +32,7 @@ public class UserController {
             service.store(user);
         } catch (Exception e) {
             response.status(BAD_REQUEST_400);
-            return "foo";
+            return BAD_REQUEST_400;
         }
 
         response.status(CREATED_201);
@@ -76,6 +76,23 @@ public class UserController {
         response.status(OK_200);
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return responseBody;
+    };
+
+    public Route updateRoute = (request, response) ->
+    {
+        User user;
+        try {
+            user = objectMapper.readValue(request.body(), User.class);
+            service.update(user);
+            user = new User(service.findById(user.getId()));
+        } catch (Exception e) {
+            response.status(BAD_REQUEST_400);
+            return BAD_REQUEST_400;
+        }
+
+        response.status(OK_200);
+        response.type(MimeTypes.Type.APPLICATION_JSON.asString());
+        return objectMapper.writeValueAsString(user);
     };
 
 }

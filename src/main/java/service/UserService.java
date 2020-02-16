@@ -79,4 +79,21 @@ public class UserService extends PersistenceService<User, UserRecord, UUID> {
         }
         return records;
     }
+
+    @Override
+    public void update(User user) throws PersistedEntityException {
+        try {
+            super.update(user);
+            dslContext.update(USER)
+                    .set(USER.FIRST_NAME, user.getFirstName())
+                    .set(USER.LAST_NAME, user.getLastName())
+                    .set(USER.DATE_OF_BIRTH, user.getDateOfBirth())
+                    .set(USER.PHONE_NUMBER, user.getPhoneNumber())
+                    .set(USER.IS_BLOCKED, user.isBlocked())
+                    .where(USER.ID.eq(user.getId()))
+                    .execute();
+        } catch (DataAccessException | PersistedEntityException exception) {
+            throw new PersistedEntityException(exception.getMessage());
+        }
+    }
 }

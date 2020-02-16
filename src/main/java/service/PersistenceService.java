@@ -8,6 +8,7 @@ import org.jooq.Result;
 import org.jooq.Results;
 import org.jooq.SQLDialect;
 import org.jooq.TableField;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
@@ -26,6 +27,11 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
 
     protected DSLContext dslContext;
 
+    protected void configureDslContext() throws SQLException {
+        Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
+        dslContext = DSL.using(connection, SQLDialect.H2, new Settings().withExecuteWithOptimisticLocking(true));
+    }
+
     protected void store(E entity) throws PersistedEntityException {
         if (entity.getId() == null) {
             entity.setId(UUID.randomUUID());
@@ -33,8 +39,7 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
 
         try {
             process(entity);
-            Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
-            dslContext = DSL.using(connection, SQLDialect.H2);
+            configureDslContext();
         } catch (SQLException | PersistedEntityException exception) {
             throw new PersistedEntityException(exception.getMessage());
         }
@@ -44,8 +49,7 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
     protected T findById(TableImpl<T> table, I id, TableField<T, I> field) throws PersistedEntityException {
         T record;
         try {
-            Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
-            dslContext = DSL.using(connection, SQLDialect.H2);
+            configureDslContext();
             record = dslContext.selectFrom(table).where(field.eq(id)).fetchOne();
 
             if (record == null) {
@@ -65,8 +69,7 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
     public Collection<Record> find(TableImpl<T> table) throws PersistedEntityException {
         List<Record> records = new ArrayList<>();
         try {
-            Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
-            dslContext = DSL.using(connection, SQLDialect.H2);
+            configureDslContext();
             Results results = dslContext.selectFrom(table).fetchMany();
             for (Result<Record> result :results) {
                 records.addAll(new ArrayList<>(result));
@@ -75,5 +78,16 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
             throw new PersistedEntityException(e.getMessage());
         }
         return records;
+    }
+
+    protected void update(E entity) throws PersistedEntityException {
+        if (entity.getId() == null) {
+            throw new PersistedEntityException("Resource does not exist!");
+        }
+        try {
+            configureDslContext();
+        } catch (SQLException e) {
+            throw new PersistedEntityException(e.getMessage());
+        }
     }
 }

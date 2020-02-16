@@ -74,4 +74,22 @@ public class AccountController {
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return responseBody;
     };
+
+    public Route updateRoute = (request, response) ->
+    {
+        Account account;
+        try {
+            account = objectMapper.readValue(request.body(), Account.class);
+            service.update(account);
+            account = new Account(service.findById(account.getId()));
+        } catch (Exception e) {
+            response.status(BAD_REQUEST_400);
+            return BAD_REQUEST_400;
+        }
+
+
+        response.status(OK_200);
+        response.type(MimeTypes.Type.APPLICATION_JSON.asString());
+        return objectMapper.writeValueAsString(account);
+    };
 }

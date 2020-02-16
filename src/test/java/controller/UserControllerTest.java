@@ -19,8 +19,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-import static io.restassured.RestAssured.get;
-import static io.restassured.RestAssured.with;
+import static io.restassured.RestAssured.*;
 import static org.eclipse.jetty.http.HttpStatus.Code.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -122,8 +121,28 @@ public class UserControllerTest {
     @Test
     @DisplayName("Get without ID parameter should return all the records")
     @Order(7)
-    void foo() {
+    void testGetWithoutIdParameterPasses() {
         get(USER_ENDPOINT).then().statusCode(OK.getCode());
+    }
+
+    @Test
+    @DisplayName("PUT with valid User Id should successfully update the record")
+    @Order(8)
+    void testPutPasses() {
+        testUser.setId(USER_ID_LIST.get(0));
+        testUser.setLastName("bar");
+        testUser.setFirstName("foo");
+        with().body(testUser).when().request(Method.PUT, USER_ENDPOINT).then().statusCode(OK.getCode());
+    }
+
+    @Test
+    @DisplayName("PUT with invalid User Id should fail")
+    @Order(9)
+    void testPutFailsWithInvalidUserId() {
+        testUser.setId(UUID.randomUUID());
+        testUser.setLastName("bar");
+        testUser.setFirstName("foo");
+        with().body(testUser).when().request(Method.PUT, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
     }
 
 }
