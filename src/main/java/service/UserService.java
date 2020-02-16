@@ -7,7 +7,10 @@ import org.jooq.exception.DataAccessException;
 import package_.tables.records.UserRecord;
 
 import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static java.time.LocalDate.now;
 import static package_.tables.User.USER;
@@ -64,5 +67,16 @@ public class UserService extends PersistenceService<User, UserRecord, UUID> {
     private boolean isValidGuardian(UUID guardianId) throws PersistedEntityException {
         UserRecord guardian = findById(guardianId);
         return !isMinor(guardian.getDateOfBirth()) && !guardian.getIsBlocked();
+    }
+
+    public Collection<UserRecord> find() throws PersistedEntityException {
+        List<UserRecord> records;
+        try {
+            records = super.find(USER).stream()
+                    .map(record -> record.into(UserRecord.class)).collect(Collectors.toList());
+        } catch (PersistedEntityException e) {
+            throw new PersistedEntityException(e.getMessage());
+        }
+        return records;
     }
 }

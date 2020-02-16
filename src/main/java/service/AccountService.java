@@ -8,7 +8,10 @@ import org.jooq.exception.DataAccessException;
 import package_.tables.records.AccountRecord;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static package_.Tables.ACCOUNT;
 
@@ -19,6 +22,18 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
     @Override
     protected void process(Account account) {
         account.setCreationTime(LocalDateTime.now());
+    }
+
+    @Override
+    public Collection<AccountRecord> find() throws PersistedEntityException {
+        List<AccountRecord> records;
+        try {
+            records = super.find(ACCOUNT).stream()
+                    .map(record -> record.into(AccountRecord.class)).collect(Collectors.toList());
+        } catch (PersistedEntityException e) {
+            throw new PersistedEntityException(e.getMessage());
+        }
+        return records;
     }
 
     @Override

@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class AccountControllerTest {
     private static final int SPARK_JAVA_DEFAULT_PORT = 4567;
-    private static final String ACCOUNT_POST_ENDPOINT = "/account";
-    private static final String ACCOUNT_GET_ENDPOINT_FORMAT = ACCOUNT_POST_ENDPOINT + "/%s";
+    private static final String ACCOUNT_ENDPOINT = "/account";
+    private static final String ACCOUNT_GET_ENDPOINT_FORMAT = ACCOUNT_ENDPOINT + "/%s";
 
     private UUID userId;
 
@@ -62,7 +62,7 @@ public class AccountControllerTest {
         testAccount.setBalance(new BigDecimal(3000));
         testAccount.setUserId(userId);
 
-        with().body(testAccount).when().request(Method.POST, ACCOUNT_POST_ENDPOINT).then().statusCode(CREATED.getCode());
+        with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT).then().statusCode(CREATED.getCode());
     }
 
     @Test
@@ -72,7 +72,7 @@ public class AccountControllerTest {
         testAccount.setBalance(new BigDecimal(3000));
         testAccount.setUserId(UUID.randomUUID());
 
-        with().body(testAccount).when().request(Method.POST, ACCOUNT_POST_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
@@ -82,7 +82,7 @@ public class AccountControllerTest {
         testAccount.setBalance(new BigDecimal(2999));
         testAccount.setUserId(UUID.randomUUID());
 
-        with().body(testAccount).when().request(Method.POST, ACCOUNT_POST_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
@@ -95,7 +95,7 @@ public class AccountControllerTest {
         assertDoesNotThrow(() -> new AccountService().store(testAccount));
 
         testAccount.setId(null);
-        with().body(testAccount).when().request(Method.POST, ACCOUNT_POST_ENDPOINT).then().statusCode(CREATED.getCode());
+        with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT).then().statusCode(CREATED.getCode());
     }
 
     @Test
@@ -114,6 +114,12 @@ public class AccountControllerTest {
     @DisplayName("Get with invalid ID should fail")
     void testGetMethodFailsWithInvalidId() {
         get(String.format(ACCOUNT_GET_ENDPOINT_FORMAT, UUID.randomUUID())).then().statusCode(NOT_FOUND.getCode());
+    }
+
+    @Test
+    @DisplayName("Get without ID parameter should return all the records")
+    void foo() {
+        get(ACCOUNT_ENDPOINT).then().statusCode(OK.getCode());
     }
 
 }

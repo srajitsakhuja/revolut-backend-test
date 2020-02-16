@@ -4,6 +4,8 @@ import dao.PersistedEntity;
 import exception.PersistedEntityException;
 import org.jooq.DSLContext;
 import org.jooq.Record;
+import org.jooq.Result;
+import org.jooq.Results;
 import org.jooq.SQLDialect;
 import org.jooq.TableField;
 import org.jooq.impl.DSL;
@@ -12,6 +14,9 @@ import org.jooq.impl.TableImpl;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 public abstract class PersistenceService<E extends PersistedEntity, T extends Record, I extends Object> {
@@ -54,4 +59,21 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
     }
 
     protected abstract void process(E entity) throws PersistedEntityException;
+
+    protected abstract Collection<T> find() throws PersistedEntityException;
+
+    public Collection<Record> find(TableImpl<T> table) throws PersistedEntityException {
+        List<Record> records = new ArrayList<>();
+        try {
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
+            dslContext = DSL.using(connection, SQLDialect.H2);
+            Results results = dslContext.selectFrom(table).fetchMany();
+            for (Result<Record> result :results) {
+                records.addAll(new ArrayList<>(result));
+            }
+        } catch (SQLException e) {
+            throw new PersistedEntityException(e.getMessage());
+        }
+        return records;
+    }
 }

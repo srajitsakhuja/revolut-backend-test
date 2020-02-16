@@ -3,14 +3,14 @@ package controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import dao.Account;
-import exception.AccountException;
-import exception.UserException;
 import org.eclipse.jetty.http.MimeTypes;
 import package_.tables.records.AccountRecord;
 import service.AccountService;
 import spark.Route;
 
+import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.eclipse.jetty.http.HttpStatus.*;
 
@@ -55,5 +55,23 @@ public class AccountController {
         response.status(OK_200);
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return objectMapper.writeValueAsString(new Account(record));
+    };
+
+    public Route findAllRoute = (request, response) ->
+    {
+        Collection<AccountRecord> records;
+        String responseBody;
+
+        try {
+            records = service.find();
+            responseBody = objectMapper.writeValueAsString(records.stream().map(Account::new).collect(Collectors.toList()));
+        } catch (Exception exception) {
+            response.status(NOT_FOUND_404);
+            return exception.getMessage();
+        }
+
+        response.status(OK_200);
+        response.type(MimeTypes.Type.APPLICATION_JSON.asString());
+        return responseBody;
     };
 }

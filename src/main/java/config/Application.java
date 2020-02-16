@@ -2,7 +2,6 @@ package config;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import config.Module;
 import controller.AccountController;
 import controller.UserController;
 
@@ -19,8 +18,11 @@ public class Application {
 
         post("/user", APPLICATION_JSON.asString(), userController.createRoute);
         get("/user/:id", userController.findRoute);
+        get("/user", userController.findAllRoute);
 
         post("/account", APPLICATION_JSON.asString(), accountController.createRoute);
         get("account/:id", accountController.findRoute);
+        get("/account", accountController.findAllRoute);
+
     }
 }

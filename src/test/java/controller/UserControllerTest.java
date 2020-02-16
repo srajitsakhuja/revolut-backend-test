@@ -27,8 +27,8 @@ import static org.eclipse.jetty.http.HttpStatus.Code.*;
 public class UserControllerTest {
     private static final List<UUID> USER_ID_LIST = new ArrayList<>();
     private static final int SPARK_JAVA_DEFAULT_PORT = 4567;
-    private static final String USER_POST_ENDPOINT = "/user";
-    private static final String USER_GET_ENDPOINT_FORMAT = USER_POST_ENDPOINT + "/%s";
+    private static final String USER_ENDPOINT = "/user";
+    private static final String USER_GET_ENDPOINT_FORMAT = USER_ENDPOINT + "/%s";
 
     private User testUser;
 
@@ -59,7 +59,7 @@ public class UserControllerTest {
     void testPostMethodPasses() {
         testUser.setDateOfBirth(LocalDate.of(1995, 9, 4));
 
-        with().body(testUser).when().request(Method.POST, USER_POST_ENDPOINT).then().statusCode(CREATED.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(CREATED.getCode());
 
         USER_ID_LIST.add(testUser.getId());
     }
@@ -71,7 +71,7 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(1995, 9, 4));
         testUser.setGuardianId(USER_ID_LIST.get(0));
 
-        with().body(testUser).when().request(Method.POST, USER_POST_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
@@ -81,7 +81,7 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
         testUser.setGuardianId(USER_ID_LIST.get(0));
 
-        with().body(testUser).when().request(Method.POST, USER_POST_ENDPOINT).then().statusCode(CREATED.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(CREATED.getCode());
         USER_ID_LIST.add(testUser.getId());
     }
 
@@ -92,7 +92,7 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
         testUser.setGuardianId(USER_ID_LIST.get(1));
 
-        with().body(testUser).when().request(Method.POST, USER_POST_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
@@ -102,7 +102,7 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
         testUser.setGuardianId(UUID.randomUUID());
 
-        with().body(testUser).when().request(Method.POST, USER_POST_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
@@ -117,6 +117,13 @@ public class UserControllerTest {
     @Order(6)
     void testGetMethodFailsWithInvalidId() {
         get(String.format(USER_GET_ENDPOINT_FORMAT, UUID.randomUUID())).then().statusCode(NOT_FOUND.getCode());
+    }
+
+    @Test
+    @DisplayName("Get without ID parameter should return all the records")
+    @Order(7)
+    void foo() {
+        get(USER_ENDPOINT).then().statusCode(OK.getCode());
     }
 
 }

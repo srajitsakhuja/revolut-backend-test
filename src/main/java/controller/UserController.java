@@ -8,7 +8,9 @@ import package_.tables.records.UserRecord;
 import service.UserService;
 import spark.Route;
 
+import java.util.Collection;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.eclipse.jetty.http.HttpStatus.*;
 
@@ -57,4 +59,23 @@ public class UserController {
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return responseBody;
     };
+
+    public Route findAllRoute = (request, response) ->
+    {
+        Collection<UserRecord> records;
+        String responseBody;
+
+        try {
+            records = service.find();
+            responseBody = objectMapper.writeValueAsString(records.stream().map(User::new).collect(Collectors.toList()));
+        } catch (Exception exception) {
+            response.status(NOT_FOUND_404);
+            return exception.getMessage();
+        }
+
+        response.status(OK_200);
+        response.type(MimeTypes.Type.APPLICATION_JSON.asString());
+        return responseBody;
+    };
+
 }
