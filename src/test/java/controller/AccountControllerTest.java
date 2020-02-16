@@ -15,6 +15,7 @@ import service.UserService;
 import spark.Spark;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Random;
 import java.util.UUID;
@@ -37,7 +38,7 @@ public class AccountControllerTest {
     }
 
     @BeforeEach
-    void beforeEachSetup() throws PersistedEntityException {
+    void beforeEachSetup() throws PersistedEntityException, SQLException {
         Application.main(new String[]{});
         Spark.awaitInitialization();
 

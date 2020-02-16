@@ -9,6 +9,8 @@ import org.jooq.Results;
 import org.jooq.SQLDialect;
 import org.jooq.TableField;
 import org.jooq.conf.Settings;
+import org.jooq.exception.DataAccessException;
+import org.jooq.exception.TooManyRowsException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
@@ -32,62 +34,57 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
         dslContext = DSL.using(connection, SQLDialect.H2, new Settings().withExecuteWithOptimisticLocking(true));
     }
 
-    protected void store(E entity) throws PersistedEntityException {
+    protected void store(E entity) throws PersistedEntityException, SQLException {
         if (entity.getId() == null) {
             entity.setId(UUID.randomUUID());
         }
 
-        try {
-            process(entity);
-            configureDslContext();
-        } catch (SQLException | PersistedEntityException exception) {
-            throw new PersistedEntityException(exception.getMessage());
-        }
+        process(entity);
+        configureDslContext();
     }
-    protected abstract T findById(UUID id) throws PersistedEntityException;
+    protected abstract T findById(UUID id) throws PersistedEntityException, SQLException;
 
-    protected T findById(TableImpl<T> table, I id, TableField<T, I> field) throws PersistedEntityException {
+    protected T findById(TableImpl<T> table, I id, TableField<T, I> field) throws PersistedEntityException, SQLException {
         T record;
-        try {
-            configureDslContext();
-            record = dslContext.selectFrom(table).where(field.eq(id)).fetchOne();
 
-            if (record == null) {
-                throw new PersistedEntityException("Record not found!");
-            }
-        } catch (SQLException e) {
-            throw new PersistedEntityException(e.getMessage());
+        configureDslContext();
+        try {
+            record = dslContext.selectFrom(table).where(field.eq(id)).fetchOne();
+        } catch (DataAccessException e) {
+            throw new PersistedEntityException("Record not found!");
+        }
+
+        if (record == null) {
+            throw new PersistedEntityException("Record not found!");
         }
 
         return record;
     }
 
-    protected abstract void process(E entity) throws PersistedEntityException;
+    protected abstract void process(E entity) throws PersistedEntityException, SQLException;
 
-    protected abstract Collection<T> find() throws PersistedEntityException;
+    protected abstract Collection<T> find() throws PersistedEntityException, SQLException;
 
-    public Collection<Record> find(TableImpl<T> table) throws PersistedEntityException {
+    public Collection<Record> find(TableImpl<T> table) throws PersistedEntityException, SQLException {
         List<Record> records = new ArrayList<>();
+        configureDslContext();
         try {
-            configureDslContext();
             Results results = dslContext.selectFrom(table).fetchMany();
             for (Result<Record> result :results) {
-                records.addAll(new ArrayList<>(result));
+                records.addAll(result);
             }
-        } catch (SQLException e) {
+        } catch (DataAccessException e) {
             throw new PersistedEntityException(e.getMessage());
         }
+
         return records;
     }
 
-    protected void update(E entity) throws PersistedEntityException {
+    protected void update(E entity) throws PersistedEntityException, SQLException {
         if (entity.getId() == null) {
             throw new PersistedEntityException("Resource does not exist!");
         }
-        try {
-            configureDslContext();
-        } catch (SQLException e) {
-            throw new PersistedEntityException(e.getMessage());
-        }
+
+        configureDslContext();
     }
 }

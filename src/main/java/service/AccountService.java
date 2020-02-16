@@ -1,76 +1,60 @@
 package service;
 
 import dao.Account;
-import exception.AccountException;
 import exception.PersistedEntityException;
-import exception.UserException;
 import org.jooq.exception.DataAccessException;
 import package_.tables.records.AccountRecord;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static package_.Tables.ACCOUNT;
 
 public class AccountService extends PersistenceService<Account, AccountRecord, UUID> {
-    private static final String CREATE_ACCOUNT_EXCEPTION_MESSAGE = "Account could not be created";
-    private static final String FIND_ACCOUNT_EXCEPTION_MESSAGE = "Account could not be found";
-
     @Override
     protected void process(Account account) {
         account.setCreationTime(LocalDateTime.now());
     }
 
     @Override
-    public Collection<AccountRecord> find() throws PersistedEntityException {
-        List<AccountRecord> records;
-        try {
-            records = super.find(ACCOUNT).stream()
-                    .map(record -> record.into(AccountRecord.class)).collect(Collectors.toList());
-        } catch (PersistedEntityException e) {
-            throw new PersistedEntityException(e.getMessage());
-        }
-        return records;
+    public Collection<AccountRecord> find() throws PersistedEntityException, SQLException {
+        return super.find(ACCOUNT).stream()
+                .map(record -> record.into(AccountRecord.class))
+                .collect(Collectors.toList());
     }
 
     @Override
-    public void store(Account account) throws AccountException {
+    public void store(Account account) throws PersistedEntityException, SQLException {
+        super.store(account);
         try {
-            super.store(account);
             dslContext.insertInto(ACCOUNT).values(account.getId(),
                     account.getBalance(),
                     account.isBlocked(),
                     account.getCreationTime(),
                     account.getUserId()).execute();
-        } catch (DataAccessException | PersistedEntityException exception) {
-            throw new AccountException(CREATE_ACCOUNT_EXCEPTION_MESSAGE);
+        } catch (DataAccessException e) {
+            throw new PersistedEntityException(e.getMessage());
         }
     }
 
     @Override
-    public AccountRecord findById(UUID id) throws UserException {
-        AccountRecord accountRecord;
-        try {
-            accountRecord = findById(ACCOUNT, id, ACCOUNT.ID);
-        } catch (PersistedEntityException exception) {
-            throw new UserException(FIND_ACCOUNT_EXCEPTION_MESSAGE);
-        }
-        return accountRecord;
+    public AccountRecord findById(UUID id) throws PersistedEntityException, SQLException {
+        return findById(ACCOUNT, id, ACCOUNT.ID);
     }
 
     @Override
-    public void update(Account account) throws PersistedEntityException {
+    public void update(Account account) throws PersistedEntityException, SQLException {
+        super.update(account);
         try {
-            super.update(account);
             dslContext.update(ACCOUNT)
                     .set(ACCOUNT.IS_BLOCKED, account.isBlocked())
                     .set(ACCOUNT.USER_ID, account.getUserId())
                     .where(ACCOUNT.ID.eq(account.getId()))
                     .execute();
-        } catch (DataAccessException | PersistedEntityException exception) {
+        } catch (DataAccessException exception) {
             throw new PersistedEntityException(exception.getMessage());
         }
     }
