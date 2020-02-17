@@ -34,6 +34,15 @@ Controllers.
 5. main/java/service: contains the business logic as well as the boilerplate code to perform CRUD operations.
 6. test/java/controller: contains rest-assured tests for testing the REST endpoints.
 
+## Plugins
+The project configures the following maven plugins:
+1. flyway-maven-plugin: executed in the generate-sources phase using the goals 'clean' and 'migrate' which remove the 
+existing schema and execute the migration scripts respectively.
+2. jooq-codegen-maven: creates java mappings of the database in the form of records, constraints etc. 
+and makes them accessible on the classpath.
+3. exec-maven-plugin: executes the application.
+4. maven-surefire-plugin: ensures that the tests are run during the maven test lifecycle-phase.
+
 ## References
 1. http://sparkjava.com/tutorials/application-structure
 2. https://www.jooq.org/doc/latest/manual/sql-execution/crud-with-updatablerecords/optimistic-locking/
