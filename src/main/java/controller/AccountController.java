@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import dao.Account;
+import dao.Deposit;
+import dao.Transfer;
 import exception.PersistedEntityException;
 import org.eclipse.jetty.http.MimeTypes;
 import package_.tables.records.AccountRecord;
@@ -118,5 +120,47 @@ public class AccountController {
         response.status(OK_200);
         response.type(MimeTypes.Type.APPLICATION_JSON.asString());
         return responseBody;
+    };
+
+    public Route transferFundsRoute = (request, response) ->
+    {
+        try {
+            Transfer transfer = objectMapper.readValue(request.body(), Transfer.class);
+            service.transferFunds(transfer);
+        } catch (JsonProcessingException e) {
+            response.status(BAD_REQUEST_400);
+            return "Error in parsing input!";
+        } catch (SQLException e) {
+            response.status(INTERNAL_SERVER_ERROR_500);
+            return "An internal server error occurred";
+        } catch (PersistedEntityException e) {
+            response.status(BAD_REQUEST_400);
+            return "Improper input!";
+        }
+
+        response.status(OK_200);
+        response.type(MimeTypes.Type.TEXT_PLAIN.asString());
+        return "Funds transferred";
+    };
+
+    public Route depositFundsRoute = (request, response) ->
+    {
+        try {
+            Deposit deposit = objectMapper.readValue(request.body(), Deposit.class);
+            service.depositFunds(deposit);
+        } catch (JsonProcessingException e) {
+            response.status(BAD_REQUEST_400);
+            return "Error in parsing input!";
+        } catch (SQLException e) {
+            response.status(INTERNAL_SERVER_ERROR_500);
+            return "An internal server error occurred";
+        } catch (PersistedEntityException e) {
+            response.status(BAD_REQUEST_400);
+            return "Improper input!";
+        }
+
+        response.status(OK_200);
+        response.type(MimeTypes.Type.TEXT_PLAIN.asString());
+        return "Funds deposited";
     };
 }

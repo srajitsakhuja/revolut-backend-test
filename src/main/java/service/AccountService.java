@@ -1,10 +1,13 @@
 package service;
 
 import dao.Account;
+import dao.Deposit;
+import dao.Transfer;
 import exception.PersistedEntityException;
 import org.jooq.exception.DataAccessException;
 import package_.tables.records.AccountRecord;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -56,6 +59,47 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
                     .execute();
         } catch (DataAccessException exception) {
             throw new PersistedEntityException(exception.getMessage());
+        }
+    }
+
+    public void transferFunds(Transfer transfer) throws SQLException, PersistedEntityException {
+        configureDslContext();
+        AccountRecord fromAccount = findById(transfer.getFromAccountId());
+        AccountRecord toAccount = findById(transfer.getToAccountId());
+
+        BigDecimal fromAccountBalance = fromAccount.getBalance().subtract(transfer.getAmount());
+        BigDecimal toAccountBalance = toAccount.getBalance().add(transfer.getAmount());
+
+        dslContext.transaction(configuration ->
+        {
+            try {
+                dslContext.update(ACCOUNT)
+                        .set(ACCOUNT.BALANCE, fromAccountBalance)
+                        .where(ACCOUNT.ID.eq(fromAccount.getId()))
+                        .execute();
+
+                dslContext.update(ACCOUNT)
+                        .set(ACCOUNT.BALANCE, toAccountBalance)
+                        .where(ACCOUNT.ID.eq(toAccount.getId()))
+                        .execute();
+            } catch (DataAccessException e) {
+                throw new PersistedEntityException(e.getMessage());
+            }
+        });
+
+    }
+
+    public void depositFunds(Deposit deposit) throws SQLException, PersistedEntityException {
+        configureDslContext();
+        AccountRecord account = findById(deposit.getAccountId());
+
+        try {
+            dslContext.update(ACCOUNT)
+                    .set(ACCOUNT.BALANCE, account.getBalance().add(deposit.getAmount()))
+                    .where(ACCOUNT.ID.eq(deposit.getAccountId()))
+                    .execute();
+        } catch (DataAccessException e) {
+            throw new PersistedEntityException(e.getMessage());
         }
     }
 }

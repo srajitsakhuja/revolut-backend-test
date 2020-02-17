@@ -10,7 +10,6 @@ import org.jooq.SQLDialect;
 import org.jooq.TableField;
 import org.jooq.conf.Settings;
 import org.jooq.exception.DataAccessException;
-import org.jooq.exception.TooManyRowsException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.TableImpl;
 
@@ -38,7 +37,6 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
         if (entity.getId() == null) {
             entity.setId(UUID.randomUUID());
         }
-
         process(entity);
         configureDslContext();
     }

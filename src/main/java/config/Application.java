@@ -26,6 +26,7 @@ public class Application {
         get("account/:id", accountController.findRoute);
         get("/account", accountController.findAllRoute);
         put("/account", APPLICATION_JSON.asString(), accountController.updateRoute);
-
+        put("/transfer", APPLICATION_JSON.asString(), accountController.transferFundsRoute);
+        put("/deposit", APPLICATION_JSON.asString(), accountController.depositFundsRoute);
     }
 }
