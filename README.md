@@ -43,6 +43,14 @@ and makes them accessible on the classpath.
 3. exec-maven-plugin: executes the application.
 4. maven-surefire-plugin: ensures that the tests are run during the maven test lifecycle-phase.
 
+## Running the Application
+The following command line statement can be executed to run the application on localhost:4567
+```
+mvn clean compile exec:java
+```
+NOTE: Any existing files in the target/ folder are deleted, the 'generate-sources' lifecycle phase is invoked causing 
+the flyway-maven-plugin and the jooq-codegen-maven to be executed and the exec-maven-plugin executes the application.
+
 ## References
 1. http://sparkjava.com/tutorials/application-structure
 2. https://www.jooq.org/doc/latest/manual/sql-execution/crud-with-updatablerecords/optimistic-locking/
