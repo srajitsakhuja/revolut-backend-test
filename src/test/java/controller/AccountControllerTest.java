@@ -1,6 +1,9 @@
 package controller;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import config.Application;
+import config.Module;
 import dao.Account;
 import dao.Deposit;
 import dao.Transfer;
@@ -8,6 +11,7 @@ import dao.User;
 import exception.PersistedEntityException;
 import io.restassured.RestAssured;
 import io.restassured.http.Method;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -37,20 +41,23 @@ public class AccountControllerTest {
     private static final String BALANCE_ID_FIELD_NAME = "balance";
     private static final String BLOCKED_FIELD_NAME = "blocked";
 
-
     private UUID userId;
     private Account testAccount;
+
+    static DSLContext dslContext;
 
     @BeforeAll
     static void beforeAllSetup() {
         RestAssured.port = SPARK_JAVA_DEFAULT_PORT;
+        Application.main(new String[]{});
+        Spark.awaitInitialization();
+        Injector injector = Guice.createInjector(new Module());
+
+        dslContext = injector.getInstance(DSLContext.class);
     }
 
     @BeforeEach
     void beforeEachSetup() throws PersistedEntityException, SQLException {
-        Application.main(new String[]{});
-        Spark.awaitInitialization();
-
         String uniquePhoneNumber = new Random().ints(48, 57 + 1)
                 .limit(10)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
@@ -60,7 +67,7 @@ public class AccountControllerTest {
         user.setPhoneNumber(uniquePhoneNumber);
         user.setDateOfBirth(LocalDate.of(1995, 9, 4));
 
-        new UserService().store(user);
+        new UserService(dslContext).store(user);
 
         userId = user.getId();
         testAccount = new Account();
@@ -102,7 +109,7 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Multiple accounts may be created for a single user")
     void testPostMethodPassesWithMultipleAccounts() {
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
         testAccount.setId(null);
 
         with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT)
@@ -115,7 +122,7 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Get with valid ID should return expected user")
     void testGetMethodPasses() {
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
 
         get(String.format(ACCOUNT_GET_ENDPOINT_FORMAT, testAccount.getId()))
                 .then().assertThat()
@@ -141,7 +148,7 @@ public class AccountControllerTest {
     @Test
     @DisplayName("PUT with valid Account Id should successfully update the record")
     void testPutPasses() {
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
 
         testAccount.setBlocked(true);
         with().body(testAccount).when().request(Method.PUT, ACCOUNT_ENDPOINT)
@@ -164,7 +171,7 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Depositing Funds into a valid account should successfully update the corresponding record")
     void testDepositPasses() {
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
 
         get(String.format(ACCOUNT_GET_ENDPOINT_FORMAT, testAccount.getId()))
                 .then().assertThat()
@@ -190,10 +197,10 @@ public class AccountControllerTest {
     void testTransferPasses() {
         testAccount.setBalance(new BigDecimal(5000));
 
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
         UUID fromAccountId = testAccount.getId();
         testAccount.setId(null);
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
         UUID toAccountId = testAccount.getId();
 
         Transfer transfer = new Transfer();
@@ -221,10 +228,10 @@ public class AccountControllerTest {
     @Disabled
     //TODO - BUGFIX: The request should actually lead to a BAD_REQUEST (400) HTTP STATUS CODE.
     void testTransferFails() {
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
         UUID fromAccountId = testAccount.getId();
         testAccount.setId(null);
-        assertDoesNotThrow(() -> new AccountService().store(testAccount));
+        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
         UUID toAccountId = testAccount.getId();
 
         Transfer transfer = new Transfer();

@@ -1,7 +1,9 @@
 package service;
 
+import com.google.inject.Inject;
 import dao.User;
 import exception.PersistedEntityException;
+import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import package_.tables.records.UserRecord;
 
@@ -15,6 +17,11 @@ import static java.time.LocalDate.now;
 import static package_.tables.User.USER;
 
 public class UserService extends PersistenceService<User, UserRecord, UUID> {
+    @Inject
+    public UserService(DSLContext dslContext) throws SQLException {
+        super(dslContext);
+    }
+
     @Override
     protected void process(User user) throws PersistedEntityException, SQLException {
         UUID guardianId = user.getGuardianId();

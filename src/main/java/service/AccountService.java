@@ -1,9 +1,11 @@
 package service;
 
+import com.google.inject.Inject;
 import dao.Account;
 import dao.Deposit;
 import dao.Transfer;
 import exception.PersistedEntityException;
+import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import package_.tables.records.AccountRecord;
 
@@ -17,6 +19,11 @@ import java.util.stream.Collectors;
 import static package_.Tables.ACCOUNT;
 
 public class AccountService extends PersistenceService<Account, AccountRecord, UUID> {
+    @Inject
+    public AccountService(DSLContext dslContext) throws SQLException {
+        super(dslContext);
+    }
+
     @Override
     protected void process(Account account) {
         account.setCreationTime(LocalDateTime.now());
@@ -63,7 +70,7 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
     }
 
     public void transferFunds(Transfer transfer) throws SQLException, PersistedEntityException {
-        configureDslContext();
+//        configureDslContext();
         AccountRecord fromAccount = findById(transfer.getFromAccountId());
         AccountRecord toAccount = findById(transfer.getToAccountId());
 
@@ -90,7 +97,7 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
     }
 
     public void depositFunds(Deposit deposit) throws SQLException, PersistedEntityException {
-        configureDslContext();
+//        configureDslContext();
         AccountRecord account = findById(deposit.getAccountId());
 
         try {

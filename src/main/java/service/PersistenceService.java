@@ -1,5 +1,6 @@
 package service;
 
+import com.google.inject.Inject;
 import dao.PersistedEntity;
 import exception.PersistedEntityException;
 import org.jooq.DSLContext;
@@ -26,11 +27,12 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
     static final String DB_USER_NAME = "sa";
     static final String DB_PASSWORD = "";
 
+
     protected DSLContext dslContext;
 
-    protected void configureDslContext() throws SQLException {
-        Connection connection = DriverManager.getConnection(DB_URL, DB_USER_NAME, DB_PASSWORD);
-        dslContext = DSL.using(connection, SQLDialect.H2, new Settings().withExecuteWithOptimisticLocking(true));
+    @Inject
+    PersistenceService(DSLContext dslContext) throws SQLException {
+        this.dslContext = dslContext;
     }
 
     protected void store(E entity) throws PersistedEntityException, SQLException {
@@ -38,14 +40,14 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
             entity.setId(UUID.randomUUID());
         }
         process(entity);
-        configureDslContext();
+//        configureDslContext();
     }
     protected abstract T findById(UUID id) throws PersistedEntityException, SQLException;
 
     protected T findById(TableImpl<T> table, I id, TableField<T, I> field) throws PersistedEntityException, SQLException {
         T record;
 
-        configureDslContext();
+//        configureDslContext();
         try {
             record = dslContext.selectFrom(table).where(field.eq(id)).fetchOne();
         } catch (DataAccessException e) {
@@ -65,7 +67,7 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
 
     public Collection<Record> find(TableImpl<T> table) throws PersistedEntityException, SQLException {
         List<Record> records = new ArrayList<>();
-        configureDslContext();
+//        configureDslContext();
         try {
             Results results = dslContext.selectFrom(table).fetchMany();
             for (Result<Record> result :results) {
@@ -83,6 +85,6 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
             throw new PersistedEntityException("Resource does not exist!");
         }
 
-        configureDslContext();
+//        configureDslContext();
     }
 }
