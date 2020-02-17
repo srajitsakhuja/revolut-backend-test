@@ -19,15 +19,24 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import static config.Application.USER_ENDPOINT;
 import static io.restassured.RestAssured.*;
 import static org.eclipse.jetty.http.HttpStatus.Code.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserControllerTest {
     private static final List<UUID> USER_ID_LIST = new ArrayList<>();
     private static final int SPARK_JAVA_DEFAULT_PORT = 4567;
-    private static final String USER_ENDPOINT = "/user";
     private static final String USER_GET_ENDPOINT_FORMAT = USER_ENDPOINT + "/%s";
+    private static final String DUMMY_FIRST_NAME = "foo";
+    private static final String DUMMY_LAST_NAME = "bar";
+    private static final String FIRST_NAME_FIELD_NAME = "firstName";
+    private static final String LAST_NAME_FIELD_NAME = "lastName";
+    private static final String DOB_FIELD_NAME_FORMAT = "dateOfBirth[%d]";
+    private static final String ID_FIELD_NAME = "id";
+    private static final String GUARDIAN_ID_FIELD_NAME = "guardianId";
 
     private User testUser;
 
@@ -47,8 +56,8 @@ public class UserControllerTest {
                 .toString();
         testUser = new User();
         testUser.setId(UUID.randomUUID());
-        testUser.setFirstName("foo");
-        testUser.setLastName("bar");
+        testUser.setFirstName(DUMMY_FIRST_NAME);
+        testUser.setLastName(DUMMY_LAST_NAME);
         testUser.setPhoneNumber(uniquePhoneNumber);
     }
 
@@ -58,7 +67,14 @@ public class UserControllerTest {
     void testPostMethodPasses() {
         testUser.setDateOfBirth(LocalDate.of(1995, 9, 4));
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(CREATED.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+                .then().assertThat()
+                .statusCode(CREATED.getCode())
+                .body(FIRST_NAME_FIELD_NAME, is(DUMMY_FIRST_NAME))
+                .body(LAST_NAME_FIELD_NAME, is(DUMMY_LAST_NAME))
+                .body(String.format(DOB_FIELD_NAME_FORMAT, 0), is(1995))
+                .body(String.format(DOB_FIELD_NAME_FORMAT, 1), is(9))
+                .body(String.format(DOB_FIELD_NAME_FORMAT, 2), is(4));
 
         USER_ID_LIST.add(testUser.getId());
     }
@@ -70,7 +86,9 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(1995, 9, 4));
         testUser.setGuardianId(USER_ID_LIST.get(0));
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+                .then().assertThat()
+                .statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
@@ -80,7 +98,12 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
         testUser.setGuardianId(USER_ID_LIST.get(0));
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(CREATED.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+                .then().assertThat()
+                .statusCode(CREATED.getCode())
+                .body(FIRST_NAME_FIELD_NAME, is("foo"))
+                .body(LAST_NAME_FIELD_NAME, is("bar"))
+                .body(GUARDIAN_ID_FIELD_NAME, is(USER_ID_LIST.get(0).toString()));
         USER_ID_LIST.add(testUser.getId());
     }
 
@@ -91,7 +114,9 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
         testUser.setGuardianId(USER_ID_LIST.get(1));
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+                .then().assertThat()
+                .statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
@@ -101,21 +126,31 @@ public class UserControllerTest {
         testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
         testUser.setGuardianId(UUID.randomUUID());
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+                .then()
+                .assertThat().statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
     @DisplayName("Get with valid ID should return expected user")
     @Order(5)
     void testGetMethodPasses() {
-        get(String.format(USER_GET_ENDPOINT_FORMAT, USER_ID_LIST.get(0))).then().statusCode(OK.getCode());
+        get(String.format(USER_GET_ENDPOINT_FORMAT, USER_ID_LIST.get(0)))
+                .then().assertThat()
+                .statusCode(OK.getCode())
+                .body(ID_FIELD_NAME, is(USER_ID_LIST.get(0).toString()))
+                .body(FIRST_NAME_FIELD_NAME, is("foo"))
+                .body(LAST_NAME_FIELD_NAME, is("bar"))
+                .body(GUARDIAN_ID_FIELD_NAME, nullValue());
     }
 
     @Test
     @DisplayName("Get with invalid ID should fail")
     @Order(6)
     void testGetMethodFailsWithInvalidId() {
-        get(String.format(USER_GET_ENDPOINT_FORMAT, UUID.randomUUID())).then().statusCode(NOT_FOUND.getCode());
+        get(String.format(USER_GET_ENDPOINT_FORMAT, UUID.randomUUID()))
+                .then().assertThat()
+                .statusCode(NOT_FOUND.getCode());
     }
 
     @Test
@@ -130,9 +165,15 @@ public class UserControllerTest {
     @Order(8)
     void testPutPasses() {
         testUser.setId(USER_ID_LIST.get(0));
-        testUser.setLastName("bar");
-        testUser.setFirstName("foo");
-        with().body(testUser).when().request(Method.PUT, USER_ENDPOINT).then().statusCode(OK.getCode());
+        testUser.setFirstName(DUMMY_LAST_NAME);
+        testUser.setLastName(DUMMY_FIRST_NAME);
+        with().body(testUser).when().request(Method.PUT, USER_ENDPOINT)
+                .then().assertThat()
+                .statusCode(OK.getCode())
+                .body(ID_FIELD_NAME, is(USER_ID_LIST.get(0).toString()))
+                .body(FIRST_NAME_FIELD_NAME, is(DUMMY_LAST_NAME))
+                .body(LAST_NAME_FIELD_NAME, is(DUMMY_FIRST_NAME))
+                .body(GUARDIAN_ID_FIELD_NAME, nullValue());
     }
 
     @Test
@@ -140,9 +181,11 @@ public class UserControllerTest {
     @Order(9)
     void testPutFailsWithInvalidUserId() {
         testUser.setId(UUID.randomUUID());
-        testUser.setLastName("bar");
-        testUser.setFirstName("foo");
-        with().body(testUser).when().request(Method.PUT, USER_ENDPOINT).then().statusCode(BAD_REQUEST.getCode());
+        testUser.setFirstName(DUMMY_LAST_NAME);
+        testUser.setLastName(DUMMY_FIRST_NAME);
+        with().body(testUser).when().request(Method.PUT, USER_ENDPOINT)
+                .then().assertThat()
+                .statusCode(BAD_REQUEST.getCode());
     }
 
 }

@@ -11,22 +11,28 @@ import static spark.Spark.post;
 import static spark.Spark.put;
 
 public class Application {
+    public static final String USER_ENDPOINT = "/user";
+    public static final String ACCOUNT_ENDPOINT = "/account";
+    public static final String TRANSFER_ENDPOINT = "/transfer";
+    public static final String DEPOSIT_ENDPOINT = "/deposit";
+
     public static void main(String[] args) {
         Injector injector = Guice.createInjector(new Module());
 
         UserController userController = injector.getInstance(UserController.class);
         AccountController accountController = injector.getInstance(AccountController.class);
 
-        post("/user", APPLICATION_JSON.asString(), userController.createRoute);
-        get("/user/:id", userController.findRoute);
-        get("/user", userController.findAllRoute);
-        put("/user", APPLICATION_JSON.asString(), userController.updateRoute);
+        post(USER_ENDPOINT, APPLICATION_JSON.asString(), userController.createRoute);
+        get(USER_ENDPOINT + "/:id", userController.findRoute);
+        get(USER_ENDPOINT, userController.findAllRoute);
+        put(USER_ENDPOINT, APPLICATION_JSON.asString(), userController.updateRoute);
 
-        post("/account", APPLICATION_JSON.asString(), accountController.createRoute);
-        get("account/:id", accountController.findRoute);
-        get("/account", accountController.findAllRoute);
-        put("/account", APPLICATION_JSON.asString(), accountController.updateRoute);
-        put("/transfer", APPLICATION_JSON.asString(), accountController.transferFundsRoute);
-        put("/deposit", APPLICATION_JSON.asString(), accountController.depositFundsRoute);
+        post(ACCOUNT_ENDPOINT, APPLICATION_JSON.asString(), accountController.createRoute);
+        get(ACCOUNT_ENDPOINT + "/:id", accountController.findRoute);
+        get(ACCOUNT_ENDPOINT, accountController.findAllRoute);
+        put(ACCOUNT_ENDPOINT, APPLICATION_JSON.asString(), accountController.updateRoute);
+
+        put(TRANSFER_ENDPOINT, APPLICATION_JSON.asString(), accountController.transferFundsRoute);
+        put(DEPOSIT_ENDPOINT, APPLICATION_JSON.asString(), accountController.depositFundsRoute);
     }
 }
