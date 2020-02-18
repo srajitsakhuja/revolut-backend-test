@@ -45,7 +45,7 @@ and makes them accessible on the classpath.
 4. maven-surefire-plugin: ensures that the tests are run during the maven test lifecycle-phase.
 
 ## Running the Application
-The following command line statement can be executed to run the application on localhost:4567/
+The following command can be executed to run the application on localhost:4567/
 ```
 mvn clean compile exec:java
 ```
@@ -63,7 +63,7 @@ a test database schema.
 
 ## Known issues
 - [ ] The update queries should get fired up for only the non-null values in the request body (json).
-- [ ] Test ordering should be avoid in the UserControllerTest to achieve test isolation.
+- [x] Test ordering should be avoid in the UserControllerTest to achieve test isolation.
 - [x] A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
 - [ ] Exceptions are not logged.
 - [ ] Db connection parameters are hard-coded. They should be injected as properties.

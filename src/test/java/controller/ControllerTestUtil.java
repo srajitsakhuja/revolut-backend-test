@@ -14,7 +14,6 @@ public class ControllerTestUtil {
 
     private static final int SPARK_JAVA_DEFAULT_PORT = 4567;
 
-
     static User createDummyUser() {
         String uniquePhoneNumber = new Random().ints(48, 57 + 1)
                 .limit(10)

@@ -53,12 +53,10 @@ public class AccountControllerTest {
 
         Injector injector = Guice.createInjector(new TestModule());
         dslContext = injector.getInstance(DSLContext.class);
-        UserService userService = injector.getInstance(UserService.class);
         accountService = injector.getInstance(AccountService.class);
 
         User user = ControllerTestUtil.createDummyUser();
-
-        userService.store(user);
+        injector.getInstance(UserService.class).store(user);
         userId = user.getId();
     }
 

@@ -31,6 +31,7 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
         }
         process(entity);
     }
+
     protected abstract T findById(UUID id) throws PersistedEntityException, SQLException;
 
     protected T findById(TableImpl<T> table, I id, TableField<T, I> field) throws PersistedEntityException, SQLException {
@@ -39,11 +40,11 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
         try {
             record = dslContext.selectFrom(table).where(field.eq(id)).fetchOne();
         } catch (DataAccessException e) {
-            throw new PersistedEntityException("Record not found!");
+            throw new PersistedEntityException("Resource does not exist!");
         }
 
         if (record == null) {
-            throw new PersistedEntityException("Record not found!");
+            throw new PersistedEntityException("Resource does not exist!");
         }
 
         return record;

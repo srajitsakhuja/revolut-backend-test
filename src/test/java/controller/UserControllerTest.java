@@ -1,8 +1,6 @@
 package controller;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import com.google.inject.Guice;
@@ -14,10 +12,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import service.UserService;
 
 import static config.RoutingConfiguration.USER_ENDPOINT;
 import static controller.ControllerTestUtil.DUMMY_FIRST_NAME;
@@ -30,14 +26,13 @@ import static org.eclipse.jetty.http.HttpStatus.Code.NOT_FOUND;
 import static org.eclipse.jetty.http.HttpStatus.Code.OK;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static package_.Keys.GUARDIAN_FK;
 import static package_.Keys.USER_FK;
 import static package_.Tables.ACCOUNT;
 import static package_.tables.User.USER;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserControllerTest {
-    private static final List<UUID> USER_ID_LIST = new ArrayList<>();
     private static final String USER_GET_ENDPOINT_FORMAT = USER_ENDPOINT + "/%s";
     private static final String FIRST_NAME_FIELD_NAME = "firstName";
     private static final String LAST_NAME_FIELD_NAME = "lastName";
@@ -47,22 +42,27 @@ public class UserControllerTest {
     private static final LocalDate ADULT_DOB = LocalDate.of(1995, 9, 4);
     private static final LocalDate MINOR_DOB = LocalDate.of(2005, 9, 4);
 
-    private User testUser;
+    private static DSLContext dslContext;
+    private static UserService userService;
 
     @BeforeAll
     static void beforeAllSetup() {
         ControllerTestUtil.configureControllerTest();
+
+        Injector injector = Guice.createInjector(new TestModule());
+        dslContext = injector.getInstance(DSLContext.class);
+        userService = injector.getInstance(UserService.class);
     }
 
     @BeforeEach
     void beforeEachSetup() {
-        testUser = ControllerTestUtil.createDummyUser();
+        truncateUserTable();
     }
 
     @Test
     @DisplayName("Adult User with a unique phone number should be created in the database")
-    @Order(1)
     void testPostMethodPasses() {
+        User testUser = ControllerTestUtil.createDummyUser();
         testUser.setDateOfBirth(ADULT_DOB);
 
         with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
@@ -73,54 +73,71 @@ public class UserControllerTest {
                 .body(String.format(DOB_FIELD_NAME_FORMAT, 0), is(ADULT_DOB.getYear()))
                 .body(String.format(DOB_FIELD_NAME_FORMAT, 1), is(9))
                 .body(String.format(DOB_FIELD_NAME_FORMAT, 2), is(4));
-
-        USER_ID_LIST.add(testUser.getId());
     }
 
     @Test
     @DisplayName("Adult User with a guardian should not be created in the database")
-    @Order(2)
     void testPostMethodFailsWithGuardianForAdultUser() {
-        testUser.setDateOfBirth(ADULT_DOB);
-        testUser.setGuardianId(USER_ID_LIST.get(0));
+        User guardianUser = ControllerTestUtil.createDummyUser();
+        guardianUser.setDateOfBirth(ADULT_DOB);
+        assertDoesNotThrow(() -> userService.store(guardianUser));
+        UUID guardianId = guardianUser.getId();
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+        User adultUser = ControllerTestUtil.createDummyUser();
+        adultUser.setGuardianId(guardianId);
+
+        with().body(adultUser).when().request(Method.POST, USER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
     @DisplayName("Minor User with a valid guardian should be created in the database")
-    @Order(3)
     void testPostMethodPassesWithValidMinorUser() {
-        testUser.setDateOfBirth(MINOR_DOB);
-        testUser.setGuardianId(USER_ID_LIST.get(0));
+        User guardianUser = ControllerTestUtil.createDummyUser();
+        guardianUser.setDateOfBirth(ADULT_DOB);
+        assertDoesNotThrow(() -> userService.store(guardianUser));
+        UUID guardianId = guardianUser.getId();
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+        User minorUser = ControllerTestUtil.createDummyUser();
+        minorUser.setDateOfBirth(MINOR_DOB);
+        minorUser.setGuardianId(guardianId);
+
+        with().body(minorUser).when().request(Method.POST, USER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(CREATED.getCode())
                 .body(FIRST_NAME_FIELD_NAME, is("foo"))
                 .body(LAST_NAME_FIELD_NAME, is("bar"))
-                .body(GUARDIAN_ID_FIELD_NAME, is(USER_ID_LIST.get(0).toString()));
-        USER_ID_LIST.add(testUser.getId());
+                .body(GUARDIAN_ID_FIELD_NAME, is(guardianId.toString()));
     }
 
     @Test
     @DisplayName("Minor User with a minor guardian should not be created in the database")
-    @Order(4)
     void testPostMethodFailsWithInvalidMinorUser() {
-        testUser.setDateOfBirth(MINOR_DOB);
-        testUser.setGuardianId(USER_ID_LIST.get(1));
+        User adultGuardianUser = ControllerTestUtil.createDummyUser();
+        adultGuardianUser.setDateOfBirth(ADULT_DOB);
+        assertDoesNotThrow(() -> userService.store(adultGuardianUser));
+        UUID adultGuardianId = adultGuardianUser.getId();
 
-        with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
+        User minorGuardianUser = ControllerTestUtil.createDummyUser();
+        minorGuardianUser.setDateOfBirth(MINOR_DOB);
+        minorGuardianUser.setGuardianId(adultGuardianId);
+        assertDoesNotThrow(() -> userService.store(minorGuardianUser));
+        UUID minorGuardianId = minorGuardianUser.getId();
+
+        User minorUser = ControllerTestUtil.createDummyUser();
+        minorUser.setDateOfBirth(MINOR_DOB);
+        minorUser.setGuardianId(minorGuardianId);
+
+        with().body(minorUser).when().request(Method.POST, USER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(BAD_REQUEST.getCode());
     }
 
     @Test
     @DisplayName("Minor User with an invalid guardian should not be created in the database")
-    @Order(4)
     void testPostMethodFailsWithInvalidGuardian() {
+        User testUser = ControllerTestUtil.createDummyUser();
         testUser.setDateOfBirth(MINOR_DOB);
         testUser.setGuardianId(UUID.randomUUID());
 
@@ -131,20 +148,22 @@ public class UserControllerTest {
 
     @Test
     @DisplayName("Get with valid ID should return expected user")
-    @Order(5)
     void testGetMethodPasses() {
-        get(String.format(USER_GET_ENDPOINT_FORMAT, USER_ID_LIST.get(0)))
+        User testUser = ControllerTestUtil.createDummyUser();
+        testUser.setDateOfBirth(ADULT_DOB);
+        assertDoesNotThrow(() -> userService.store(testUser));
+
+        get(String.format(USER_GET_ENDPOINT_FORMAT, testUser.getId()))
                 .then().assertThat()
                 .statusCode(OK.getCode())
-                .body(ID_FIELD_NAME, is(USER_ID_LIST.get(0).toString()))
-                .body(FIRST_NAME_FIELD_NAME, is("foo"))
-                .body(LAST_NAME_FIELD_NAME, is("bar"))
+                .body(ID_FIELD_NAME, is(testUser.getId().toString()))
+                .body(FIRST_NAME_FIELD_NAME, is(testUser.getFirstName()))
+                .body(LAST_NAME_FIELD_NAME, is(testUser.getLastName()))
                 .body(GUARDIAN_ID_FIELD_NAME, nullValue());
     }
 
     @Test
     @DisplayName("Get with invalid ID should fail")
-    @Order(6)
     void testGetMethodFailsWithInvalidId() {
         get(String.format(USER_GET_ENDPOINT_FORMAT, UUID.randomUUID()))
                 .then().assertThat()
@@ -153,46 +172,47 @@ public class UserControllerTest {
 
     @Test
     @DisplayName("Get without ID parameter should return all the records")
-    @Order(7)
     void testGetWithoutIdParameterPasses() {
         get(USER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(OK.getCode())
-                .body("$.size", is(2));
+                .body("$.size", is(0));
     }
 
     @Test
     @DisplayName("PUT with valid User Id should successfully update the record")
-    @Order(8)
     void testPutPasses() {
-        testUser.setId(USER_ID_LIST.get(0));
-        testUser.setFirstName(DUMMY_LAST_NAME);
-        testUser.setLastName(DUMMY_FIRST_NAME);
+        User testUser = ControllerTestUtil.createDummyUser();
+        testUser.setDateOfBirth(ADULT_DOB);
+        assertDoesNotThrow(() -> userService.store(testUser));
+
+        String updatedFirstName = "updatedFirstName";
+        String updatedLastName = "updatedLastName";
+        testUser.setFirstName(updatedFirstName);
+        testUser.setLastName(updatedLastName);
         with().body(testUser).when().request(Method.PUT, USER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(OK.getCode())
-                .body(ID_FIELD_NAME, is(USER_ID_LIST.get(0).toString()))
-                .body(FIRST_NAME_FIELD_NAME, is(DUMMY_LAST_NAME))
-                .body(LAST_NAME_FIELD_NAME, is(DUMMY_FIRST_NAME))
+                .body(ID_FIELD_NAME, is(testUser.getId().toString()))
+                .body(FIRST_NAME_FIELD_NAME, is(updatedFirstName))
+                .body(LAST_NAME_FIELD_NAME, is(updatedLastName))
                 .body(GUARDIAN_ID_FIELD_NAME, nullValue());
     }
 
     @Test
     @DisplayName("PUT with invalid User Id should fail")
-    @Order(9)
     void testPutFailsWithInvalidUserId() {
+        User testUser = ControllerTestUtil.createDummyUser();
         testUser.setId(UUID.randomUUID());
-        testUser.setFirstName(DUMMY_LAST_NAME);
-        testUser.setLastName(DUMMY_FIRST_NAME);
+        testUser.setFirstName("updatedFirstName");
+
         with().body(testUser).when().request(Method.PUT, USER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(BAD_REQUEST.getCode());
     }
 
     @AfterAll
-    static void tearDown() {
-        Injector injector = Guice.createInjector(new TestModule());
-        DSLContext dslContext = injector.getInstance(DSLContext.class);
+    static void truncateUserTable() {
         dslContext.alterTable(ACCOUNT).drop(USER_FK.constraint()).execute();
         dslContext.alterTable(USER).drop(GUARDIAN_FK.constraint()).execute();
         dslContext.truncateTable(USER).execute();
