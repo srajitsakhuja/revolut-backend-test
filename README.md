@@ -44,12 +44,29 @@ and makes them accessible on the classpath.
 4. maven-surefire-plugin: ensures that the tests are run during the maven test lifecycle-phase.
 
 ## Running the Application
-The following command line statement can be executed to run the application on localhost:4567
+The following command line statement can be executed to run the application on localhost:4567/
 ```
 mvn clean compile exec:java
 ```
 NOTE: Any existing files in the target/ folder are deleted, the 'generate-sources' lifecycle phase is invoked causing 
 the flyway-maven-plugin and the jooq-codegen-maven to be executed and the exec-maven-plugin executes the application.
+
+```
+mvn clean test exec:java
+```
+could be used to also execute the tests before running the application.
+
+## Known issues
+1. The update queries should get fired up for only the non-null values in the request body (json).
+2. Test ordering should be avoid in the UserControllerTest to achieve test isolation.
+3. A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
+4. Exceptions are not logged.
+5. Db connection parameters are hard-coded. They should be injected as properties.
+6. The code should be checked for check-style, pmd violations.
+7. Transfers/Deposits from and to 'blocked' accounts/users should be prohibited.
+8. Transfers/Deposits should be persisted in the Db.
+9. There should be an endpoint for fetching all the accounts for a userId.  
+
 
 ## References
 1. http://sparkjava.com/tutorials/application-structure
