@@ -13,6 +13,7 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <h2.url>jdbc:h2:./target/generated-sources/db/revolut-backend-test-h2Db</h2.url>
+        <test.h2.url>jdbc:h2:./target/generated-test-sources/db/test-revolut-backend-test-h2Db</test.h2.url>
         <h2.username>sa</h2.username>
     </properties>
 
@@ -85,15 +86,30 @@
                             <goal>clean</goal>
                             <goal>migrate</goal>
                         </goals>
+                        <configuration>
+                            <url>${h2.url}</url>
+                            <user>${h2.username}</user>
+                            <locations>
+                                <location>filesystem:src/main/resources/db/migration</location>
+                            </locations>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>create-test-db</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>clean</goal>
+                            <goal>migrate</goal>
+                        </goals>
+                        <configuration>
+                            <url>${test.h2.url}</url>
+                            <user>${h2.username}</user>
+                            <locations>
+                                <location>filesystem:src/main/resources/db/migration</location>
+                            </locations>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <url>${h2.url}</url>
-                    <user>${h2.username}</user>
-                    <locations>
-                        <location>filesystem:src/main/resources/db/migration</location>
-                    </locations>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.jooq</groupId>

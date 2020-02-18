@@ -1,11 +1,13 @@
 package controller;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import config.Application;
-import config.Module;
 import dao.User;
-import io.restassured.RestAssured;
 import io.restassured.http.Method;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
@@ -16,18 +18,16 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import spark.Spark;
 
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
-
-import static config.Application.USER_ENDPOINT;
+import static config.RoutingConfiguration.USER_ENDPOINT;
+import static controller.ControllerTestUtil.DUMMY_FIRST_NAME;
+import static controller.ControllerTestUtil.DUMMY_LAST_NAME;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.with;
-import static org.eclipse.jetty.http.HttpStatus.Code.*;
+import static org.eclipse.jetty.http.HttpStatus.Code.BAD_REQUEST;
+import static org.eclipse.jetty.http.HttpStatus.Code.CREATED;
+import static org.eclipse.jetty.http.HttpStatus.Code.NOT_FOUND;
+import static org.eclipse.jetty.http.HttpStatus.Code.OK;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static package_.Keys.GUARDIAN_FK;
@@ -38,51 +38,39 @@ import static package_.tables.User.USER;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserControllerTest {
     private static final List<UUID> USER_ID_LIST = new ArrayList<>();
-    private static final int SPARK_JAVA_DEFAULT_PORT = 4567;
     private static final String USER_GET_ENDPOINT_FORMAT = USER_ENDPOINT + "/%s";
-    private static final String DUMMY_FIRST_NAME = "foo";
-    private static final String DUMMY_LAST_NAME = "bar";
     private static final String FIRST_NAME_FIELD_NAME = "firstName";
     private static final String LAST_NAME_FIELD_NAME = "lastName";
     private static final String DOB_FIELD_NAME_FORMAT = "dateOfBirth[%d]";
     private static final String ID_FIELD_NAME = "id";
     private static final String GUARDIAN_ID_FIELD_NAME = "guardianId";
+    private static final LocalDate ADULT_DOB = LocalDate.of(1995, 9, 4);
+    private static final LocalDate MINOR_DOB = LocalDate.of(2005, 9, 4);
 
     private User testUser;
 
     @BeforeAll
     static void beforeAllSetup() {
-        RestAssured.port = SPARK_JAVA_DEFAULT_PORT;
+        ControllerTestUtil.configureControllerTest();
     }
 
     @BeforeEach
     void beforeEachSetup() {
-        Application.main(new String[]{});
-        Spark.awaitInitialization();
-
-        String uniquePhoneNumber = new Random().ints(48, 57 + 1)
-                .limit(10)
-                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                .toString();
-        testUser = new User();
-        testUser.setId(UUID.randomUUID());
-        testUser.setFirstName(DUMMY_FIRST_NAME);
-        testUser.setLastName(DUMMY_LAST_NAME);
-        testUser.setPhoneNumber(uniquePhoneNumber);
+        testUser = ControllerTestUtil.createDummyUser();
     }
 
     @Test
     @DisplayName("Adult User with a unique phone number should be created in the database")
     @Order(1)
     void testPostMethodPasses() {
-        testUser.setDateOfBirth(LocalDate.of(1995, 9, 4));
+        testUser.setDateOfBirth(ADULT_DOB);
 
         with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(CREATED.getCode())
                 .body(FIRST_NAME_FIELD_NAME, is(DUMMY_FIRST_NAME))
                 .body(LAST_NAME_FIELD_NAME, is(DUMMY_LAST_NAME))
-                .body(String.format(DOB_FIELD_NAME_FORMAT, 0), is(1995))
+                .body(String.format(DOB_FIELD_NAME_FORMAT, 0), is(ADULT_DOB.getYear()))
                 .body(String.format(DOB_FIELD_NAME_FORMAT, 1), is(9))
                 .body(String.format(DOB_FIELD_NAME_FORMAT, 2), is(4));
 
@@ -93,7 +81,7 @@ public class UserControllerTest {
     @DisplayName("Adult User with a guardian should not be created in the database")
     @Order(2)
     void testPostMethodFailsWithGuardianForAdultUser() {
-        testUser.setDateOfBirth(LocalDate.of(1995, 9, 4));
+        testUser.setDateOfBirth(ADULT_DOB);
         testUser.setGuardianId(USER_ID_LIST.get(0));
 
         with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
@@ -105,7 +93,7 @@ public class UserControllerTest {
     @DisplayName("Minor User with a valid guardian should be created in the database")
     @Order(3)
     void testPostMethodPassesWithValidMinorUser() {
-        testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
+        testUser.setDateOfBirth(MINOR_DOB);
         testUser.setGuardianId(USER_ID_LIST.get(0));
 
         with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
@@ -121,7 +109,7 @@ public class UserControllerTest {
     @DisplayName("Minor User with a minor guardian should not be created in the database")
     @Order(4)
     void testPostMethodFailsWithInvalidMinorUser() {
-        testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
+        testUser.setDateOfBirth(MINOR_DOB);
         testUser.setGuardianId(USER_ID_LIST.get(1));
 
         with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
@@ -133,7 +121,7 @@ public class UserControllerTest {
     @DisplayName("Minor User with an invalid guardian should not be created in the database")
     @Order(4)
     void testPostMethodFailsWithInvalidGuardian() {
-        testUser.setDateOfBirth(LocalDate.of(2005, 9, 4));
+        testUser.setDateOfBirth(MINOR_DOB);
         testUser.setGuardianId(UUID.randomUUID());
 
         with().body(testUser).when().request(Method.POST, USER_ENDPOINT)
@@ -167,7 +155,10 @@ public class UserControllerTest {
     @DisplayName("Get without ID parameter should return all the records")
     @Order(7)
     void testGetWithoutIdParameterPasses() {
-        get(USER_ENDPOINT).then().statusCode(OK.getCode());
+        get(USER_ENDPOINT)
+                .then().assertThat()
+                .statusCode(OK.getCode())
+                .body("$.size", is(2));
     }
 
     @Test
@@ -200,7 +191,7 @@ public class UserControllerTest {
 
     @AfterAll
     static void tearDown() {
-        Injector injector = Guice.createInjector(new Module());
+        Injector injector = Guice.createInjector(new TestModule());
         DSLContext dslContext = injector.getInstance(DSLContext.class);
         dslContext.alterTable(ACCOUNT).drop(USER_FK.constraint()).execute();
         dslContext.alterTable(USER).drop(GUARDIAN_FK.constraint()).execute();

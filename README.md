@@ -37,7 +37,8 @@ Controllers.
 ## Plugins
 The project configures the following maven plugins:
 1. flyway-maven-plugin: executed in the generate-sources phase using the goals 'clean' and 'migrate' which remove the 
-existing schema and execute the migration scripts respectively.
+existing schema and execute the migration scripts respectively. It is also executed in the generate-test-sources phase
+to use the same migration scripts to generate a test database at target/generated-test-sources/db.
 2. jooq-codegen-maven: creates java mappings of the database in the form of records, constraints etc. 
 and makes them accessible on the classpath.
 3. exec-maven-plugin: executes the application.
@@ -48,13 +49,17 @@ The following command line statement can be executed to run the application on l
 ```
 mvn clean compile exec:java
 ```
-NOTE: Any existing files in the target/ folder are deleted, the 'generate-sources' lifecycle phase is invoked causing 
+This deletes any existing files in the target/ folder, the 'generate-sources' lifecycle phase is invoked causing
 the flyway-maven-plugin and the jooq-codegen-maven to be executed and the exec-maven-plugin executes the application.
 
 ```
 mvn clean test exec:java
 ```
 could be used to also execute the tests before running the application.
+
+NOTE: The tests can **not** be executed without executing mvn generate-test-sources (or a phase after it in the
+'default' lifecycle) first. This is because the tests rely on the flyway-maven-plugin to be invoked for generating
+a test database schema.
 
 ## Known issues
 1. The update queries should get fired up for only the non-null values in the request body (json).

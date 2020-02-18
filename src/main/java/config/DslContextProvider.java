@@ -11,9 +11,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class DslContextProvider implements Provider<DSLContext> {
-    static final String DB_URL = "jdbc:h2:./target/generated-sources/db/revolut-backend-test-h2Db";
-    static final String DB_USER_NAME = "sa";
-    static final String DB_PASSWORD = "";
+    private static final String DB_URL = "jdbc:h2:./target/generated-sources/db/revolut-backend-test-h2Db";
+    private static final String DB_USER_NAME = "sa";
+    private static final String DB_PASSWORD = "";
 
     @Override
     public DSLContext get() {
