@@ -62,15 +62,15 @@ NOTE: The tests can **not** be executed without executing mvn generate-test-sour
 a test database schema.
 
 ## Known issues
-1. The update queries should get fired up for only the non-null values in the request body (json).
-2. Test ordering should be avoid in the UserControllerTest to achieve test isolation.
-3. A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
-4. Exceptions are not logged.
-5. Db connection parameters are hard-coded. They should be injected as properties.
-6. The code should be checked for check-style, pmd violations.
-7. Transfers/Deposits from and to 'blocked' accounts/users should be prohibited.
-8. Transfers/Deposits should be persisted in the Db.
-9. There should be an endpoint for fetching all the accounts for a userId.  
+- [ ] The update queries should get fired up for only the non-null values in the request body (json).
+- [ ] Test ordering should be avoid in the UserControllerTest to achieve test isolation.
+- [x] A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
+- [ ] Exceptions are not logged.
+- [ ] Db connection parameters are hard-coded. They should be injected as properties.
+- [ ] The code should be checked for check-style, pmd violations.
+- [ ] Transfers/Deposits from and to 'blocked' accounts/users should be prohibited.
+- [ ] Transfers/Deposits should be persisted in the Db.
+- [ ] There should be an endpoint for fetching all the accounts for a userId.
 
 
 ## References

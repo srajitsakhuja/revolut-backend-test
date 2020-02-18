@@ -1,17 +1,17 @@
 package service;
 
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import com.google.inject.Inject;
 import dao.User;
 import exception.PersistedEntityException;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import package_.tables.records.UserRecord;
-
-import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static java.time.LocalDate.now;
 import static package_.tables.User.USER;

@@ -16,7 +16,6 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import package_.Tables;
@@ -244,8 +243,6 @@ public class AccountControllerTest {
 
     @Test
     @DisplayName("Transferring Funds b/w valid accounts fails when minimum balance constraint is violated")
-    @Disabled
-    //TODO - BUGFIX: The request should actually lead to a BAD_REQUEST (400) HTTP STATUS CODE.
     void testTransferFails() {
         Account testAccount = new Account();
         testAccount.setBalance(new BigDecimal(3000));

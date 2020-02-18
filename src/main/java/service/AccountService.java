@@ -3,6 +3,7 @@ package service;
 import com.google.inject.Inject;
 import dao.Account;
 import dao.Deposit;
+import dao.PersistedEntity;
 import dao.Transfer;
 import exception.PersistedEntityException;
 import org.jooq.DSLContext;
@@ -70,12 +71,15 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
     }
 
     public void transferFunds(Transfer transfer) throws SQLException, PersistedEntityException {
-//        configureDslContext();
         AccountRecord fromAccount = findById(transfer.getFromAccountId());
         AccountRecord toAccount = findById(transfer.getToAccountId());
 
         BigDecimal fromAccountBalance = fromAccount.getBalance().subtract(transfer.getAmount());
         BigDecimal toAccountBalance = toAccount.getBalance().add(transfer.getAmount());
+
+        if (fromAccountBalance.compareTo(new BigDecimal(3000)) < 0) {
+            throw new PersistedEntityException("Insufficient Balance");
+        }
 
         dslContext.transaction(configuration ->
         {
@@ -97,7 +101,6 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
     }
 
     public void depositFunds(Deposit deposit) throws SQLException, PersistedEntityException {
-//        configureDslContext();
         AccountRecord account = findById(deposit.getAccountId());
 
         try {
