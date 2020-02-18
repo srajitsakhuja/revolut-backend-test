@@ -43,6 +43,7 @@ to use the same migration scripts to generate a test database at target/generate
 and makes them accessible on the classpath.
 3. exec-maven-plugin: executes the application.
 4. maven-surefire-plugin: ensures that the tests are run during the maven test lifecycle-phase.
+5. resources-plugin: ensures that application and test properties are 'filtered' from the pom file.
 
 ## Running the Application
 The following command can be executed to run the application on localhost:4567/
@@ -66,7 +67,7 @@ a test database schema.
 - [x] Test ordering should be avoid in the UserControllerTest to achieve test isolation.
 - [x] A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
 - [ ] Exceptions are not logged.
-- [ ] Db connection parameters are hard-coded. They should be injected as properties.
+- [x] Db connection parameters are hard-coded. They should be injected as properties.
 - [ ] The code should be checked for check-style, pmd violations.
 - [ ] Transfers/Deposits from and to 'blocked' accounts/users should be prohibited.
 - [ ] Transfers/Deposits should be persisted in the Db.
