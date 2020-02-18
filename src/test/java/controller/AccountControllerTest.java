@@ -12,6 +12,7 @@ import exception.PersistedEntityException;
 import io.restassured.RestAssured;
 import io.restassured.http.Method;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -33,6 +34,7 @@ import static io.restassured.RestAssured.with;
 import static org.eclipse.jetty.http.HttpStatus.Code.*;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static package_.tables.Account.ACCOUNT;
 
 public class AccountControllerTest {
     private static final int SPARK_JAVA_DEFAULT_PORT = 4567;
@@ -40,11 +42,12 @@ public class AccountControllerTest {
     private static final String USER_ID_FIELD_NAME = "userId";
     private static final String BALANCE_ID_FIELD_NAME = "balance";
     private static final String BLOCKED_FIELD_NAME = "blocked";
+    private static UserService userService;
+    private static AccountService accountService;
+    private static DSLContext dslContext;
 
     private UUID userId;
     private Account testAccount;
-
-    static DSLContext dslContext;
 
     @BeforeAll
     static void beforeAllSetup() {
@@ -52,12 +55,15 @@ public class AccountControllerTest {
         Application.main(new String[]{});
         Spark.awaitInitialization();
         Injector injector = Guice.createInjector(new Module());
-
         dslContext = injector.getInstance(DSLContext.class);
+
+        userService = injector.getInstance(UserService.class);
+        accountService = injector.getInstance(AccountService.class);
     }
 
     @BeforeEach
     void beforeEachSetup() throws PersistedEntityException, SQLException {
+        dslContext.truncateTable(ACCOUNT).execute();
         String uniquePhoneNumber = new Random().ints(48, 57 + 1)
                 .limit(10)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
@@ -67,17 +73,16 @@ public class AccountControllerTest {
         user.setPhoneNumber(uniquePhoneNumber);
         user.setDateOfBirth(LocalDate.of(1995, 9, 4));
 
-        new UserService(dslContext).store(user);
-
+        userService.store(user);
         userId = user.getId();
         testAccount = new Account();
-        testAccount.setBalance(new BigDecimal(3000));
-        testAccount.setUserId(userId);
     }
 
     @Test
     @DisplayName("Account with a valid User, minimum balance should be created in the database")
     void testPostMethodPasses() {
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
         with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT)
                 .then().assertThat()
                 .statusCode(CREATED.getCode())
@@ -88,6 +93,7 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Account with an invalid User should not be created")
     void testPostMethodFailsWithInvalidUser() {
+        testAccount.setBalance(new BigDecimal(3000));
         testAccount.setUserId(UUID.randomUUID());
 
         with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT)
@@ -98,8 +104,8 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Account with balance below minimum_balance should not be created")
     void testPostMethodFailsWith() {
+        testAccount.setUserId(userId);
         testAccount.setBalance(new BigDecimal(2999));
-        testAccount.setUserId(UUID.randomUUID());
 
         with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT)
                 .then().assertThat()
@@ -109,7 +115,10 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Multiple accounts may be created for a single user")
     void testPostMethodPassesWithMultipleAccounts() {
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
+
+        assertDoesNotThrow(() -> accountService.store(testAccount));
         testAccount.setId(null);
 
         with().body(testAccount).when().request(Method.POST, ACCOUNT_ENDPOINT)
@@ -122,7 +131,9 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Get with valid ID should return expected user")
     void testGetMethodPasses() {
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
+        assertDoesNotThrow(() -> accountService.store(testAccount));
 
         get(String.format(ACCOUNT_GET_ENDPOINT_FORMAT, testAccount.getId()))
                 .then().assertThat()
@@ -142,13 +153,18 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Get without ID parameter should return all the records")
     void testGetWithoutIdParameterPasses() {
-        get(ACCOUNT_ENDPOINT).then().statusCode(OK.getCode());
+        get(ACCOUNT_ENDPOINT)
+                .then().assertThat()
+                .statusCode(OK.getCode())
+                .body("$.size", is(0));
     }
 
     @Test
     @DisplayName("PUT with valid Account Id should successfully update the record")
     void testPutPasses() {
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
+        assertDoesNotThrow(() -> accountService.store(testAccount));
 
         testAccount.setBlocked(true);
         with().body(testAccount).when().request(Method.PUT, ACCOUNT_ENDPOINT)
@@ -171,7 +187,9 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Depositing Funds into a valid account should successfully update the corresponding record")
     void testDepositPasses() {
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
+        assertDoesNotThrow(() -> accountService.store(testAccount));
 
         get(String.format(ACCOUNT_GET_ENDPOINT_FORMAT, testAccount.getId()))
                 .then().assertThat()
@@ -195,12 +213,13 @@ public class AccountControllerTest {
     @Test
     @DisplayName("Transferring Funds b/w valid accounts should successfully update the corresponding records")
     void testTransferPasses() {
+        testAccount.setUserId(userId);
         testAccount.setBalance(new BigDecimal(5000));
 
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        assertDoesNotThrow(() -> accountService.store(testAccount));
         UUID fromAccountId = testAccount.getId();
         testAccount.setId(null);
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        assertDoesNotThrow(() -> accountService.store(testAccount));
         UUID toAccountId = testAccount.getId();
 
         Transfer transfer = new Transfer();
@@ -228,10 +247,12 @@ public class AccountControllerTest {
     @Disabled
     //TODO - BUGFIX: The request should actually lead to a BAD_REQUEST (400) HTTP STATUS CODE.
     void testTransferFails() {
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        testAccount.setBalance(new BigDecimal(3000));
+        testAccount.setUserId(userId);
+        assertDoesNotThrow(() -> accountService.store(testAccount));
         UUID fromAccountId = testAccount.getId();
         testAccount.setId(null);
-        assertDoesNotThrow(() -> new AccountService(dslContext).store(testAccount));
+        assertDoesNotThrow(() -> accountService.store(testAccount));
         UUID toAccountId = testAccount.getId();
 
         Transfer transfer = new Transfer();
@@ -242,5 +263,10 @@ public class AccountControllerTest {
         with().body(transfer).when().request(Method.PUT, TRANSFER_ENDPOINT)
                 .then().assertThat()
                 .statusCode(BAD_REQUEST.getCode());
+    }
+
+    @AfterAll
+    static void tearDown() {
+        dslContext.truncateTable(ACCOUNT).execute();
     }
 }

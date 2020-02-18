@@ -1,9 +1,14 @@
 package controller;
 
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import config.Application;
+import config.Module;
 import dao.User;
 import io.restassured.RestAssured;
 import io.restassured.http.Method;
+import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,10 +25,15 @@ import java.util.Random;
 import java.util.UUID;
 
 import static config.Application.USER_ENDPOINT;
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.get;
+import static io.restassured.RestAssured.with;
 import static org.eclipse.jetty.http.HttpStatus.Code.*;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static package_.Keys.GUARDIAN_FK;
+import static package_.Keys.USER_FK;
+import static package_.Tables.ACCOUNT;
+import static package_.tables.User.USER;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class UserControllerTest {
@@ -188,4 +198,14 @@ public class UserControllerTest {
                 .statusCode(BAD_REQUEST.getCode());
     }
 
+    @AfterAll
+    static void tearDown() {
+        Injector injector = Guice.createInjector(new Module());
+        DSLContext dslContext = injector.getInstance(DSLContext.class);
+        dslContext.alterTable(ACCOUNT).drop(USER_FK.constraint()).execute();
+        dslContext.alterTable(USER).drop(GUARDIAN_FK.constraint()).execute();
+        dslContext.truncateTable(USER).execute();
+        dslContext.alterTable(ACCOUNT).add(USER_FK.constraint()).execute();
+        dslContext.alterTable(USER).add(GUARDIAN_FK.constraint()).execute();
+    }
 }
