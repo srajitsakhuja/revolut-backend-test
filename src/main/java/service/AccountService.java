@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static package_.Tables.ACCOUNT;
@@ -76,44 +77,40 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
         }
     }
 
-    public void transferFunds(Transfer transfer) throws SQLException, PersistedEntityException {
-        AccountRecord fromAccount = findById(transfer.getFromAccountId());
-        AccountRecord toAccount = findById(transfer.getToAccountId());
-
-        BigDecimal fromAccountBalance = fromAccount.getBalance().subtract(transfer.getAmount());
-        BigDecimal toAccountBalance = toAccount.getBalance().add(transfer.getAmount());
-
-        if (fromAccountBalance.compareTo(new BigDecimal(3000)) < 0) {
-            throw new PersistedEntityException("Insufficient Balance");
-        }
-
+    public void transferFunds(Transfer transfer) {
         dslContext.transaction(configuration ->
         {
             try {
-                dslContext.update(ACCOUNT)
-                        .set(ACCOUNT.BALANCE, fromAccountBalance)
-                        .where(ACCOUNT.ID.eq(fromAccount.getId()))
-                        .execute();
+                AccountRecord fromAccount = dslContext.fetchOne(ACCOUNT, ACCOUNT.ID.eq(transfer.getFromAccountId()));
+                BigDecimal fromAccountBalance = fromAccount.getBalance().subtract(transfer.getAmount());
+                if (fromAccountBalance.compareTo(new BigDecimal(3000)) < 0) {
+                    return;
+                }
+                AccountRecord toAccount = dslContext.fetchOne(ACCOUNT, ACCOUNT.ID.eq(transfer.getToAccountId()));
+                BigDecimal toAccountBalance = toAccount.getBalance().add(transfer.getAmount());
 
-                dslContext.update(ACCOUNT)
-                        .set(ACCOUNT.BALANCE, toAccountBalance)
-                        .where(ACCOUNT.ID.eq(toAccount.getId()))
-                        .execute();
-            } catch (DataAccessException e) {
-                throw new PersistedEntityException(e.getMessage());
+                if (fromAccount.getIsBlocked() | toAccount.getIsBlocked()) {
+                    return;
+                }
+                fromAccount.setBalance(fromAccountBalance);
+                fromAccount.store();
+                toAccount.setBalance(toAccountBalance);
+                toAccount.store();
+            } catch (DataAccessException exception) {
+                throw new PersistedEntityException(exception.getMessage());
             }
         });
-
     }
 
-    public void depositFunds(Deposit deposit) throws SQLException, PersistedEntityException {
-        AccountRecord account = findById(deposit.getAccountId());
-
+    public void depositFunds(Deposit deposit) throws PersistedEntityException {
         try {
-            dslContext.update(ACCOUNT)
-                    .set(ACCOUNT.BALANCE, account.getBalance().add(deposit.getAmount()))
-                    .where(ACCOUNT.ID.eq(deposit.getAccountId()))
-                    .execute();
+            AccountRecord account = dslContext.fetchOne(ACCOUNT, ACCOUNT.ID.eq(deposit.getAccountId()));
+            if (account.getIsBlocked()) {
+                throw new PersistedEntityException("Can not deposit funds to a blocked account!");
+            }
+            BigDecimal balance = account.getBalance().add(deposit.getAmount());
+            account.setBalance(balance);
+            account.store();
         } catch (DataAccessException e) {
             throw new PersistedEntityException(e.getMessage());
         }

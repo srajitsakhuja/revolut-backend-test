@@ -62,14 +62,14 @@ NOTE: The tests can **not** be executed without executing mvn generate-test-sour
 'default' lifecycle) first. This is because the tests rely on the flyway-maven-plugin to be invoked for generating
 a test database schema.
 
-## Known issues
+## Known Issues / Potential Enhancements
 - [ ] The update queries should get fired up for only the non-null values in the request body (json).
 - [x] Test ordering should be avoid in the UserControllerTest to achieve test isolation.
-- [x] A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
+- [ ] A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
 - [x] Exceptions are not logged.
 - [x] Db connection parameters are hard-coded. They should be injected as properties.
 - [ ] The code should be checked for check-style, pmd violations.
-- [ ] Transfers/Deposits from and to 'blocked' accounts/users should be prohibited.
+- [x] Transfers/Deposits from and to 'blocked' accounts/users should be prohibited.
 - [ ] Transfers/Deposits should be persisted in the Db.
 - [ ] There should be an endpoint for fetching all the accounts for a userId.
 

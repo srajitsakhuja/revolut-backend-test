@@ -130,12 +130,6 @@ public class AccountController {
         } catch (JsonProcessingException e) {
             response.status(BAD_REQUEST_400);
             return "Error in parsing input!";
-        } catch (SQLException e) {
-            response.status(INTERNAL_SERVER_ERROR_500);
-            return "An internal server error occurred";
-        } catch (PersistedEntityException e) {
-            response.status(BAD_REQUEST_400);
-            return "Improper input!";
         }
 
         response.status(OK_200);
@@ -151,9 +145,6 @@ public class AccountController {
         } catch (JsonProcessingException e) {
             response.status(BAD_REQUEST_400);
             return "Error in parsing input!";
-        } catch (SQLException e) {
-            response.status(INTERNAL_SERVER_ERROR_500);
-            return "An internal server error occurred";
         } catch (PersistedEntityException e) {
             response.status(BAD_REQUEST_400);
             return "Improper input!";
