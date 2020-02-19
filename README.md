@@ -63,7 +63,7 @@ NOTE: The tests can **not** be executed without executing mvn generate-test-sour
 a test database schema.
 
 ## Known Issues / Potential Enhancements
-- [ ] The update queries should get fired up for only the non-null values in the request body (json).
+- [x] The update queries should get fired up for only the non-null values in the request body (json).
 - [x] Test ordering should be avoid in the UserControllerTest to achieve test isolation.
 - [ ] A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
 - [x] Exceptions are not logged.

@@ -79,14 +79,15 @@ public class UserService extends PersistenceService<User, UserRecord, UUID> {
         super.update(user);
 
         try {
-            dslContext.update(USER)
-                    .set(USER.FIRST_NAME, user.getFirstName())
-                    .set(USER.LAST_NAME, user.getLastName())
-                    .set(USER.DATE_OF_BIRTH, user.getDateOfBirth())
-                    .set(USER.PHONE_NUMBER, user.getPhoneNumber())
-                    .set(USER.IS_BLOCKED, user.isBlocked())
-                    .where(USER.ID.eq(user.getId()))
-                    .execute();
+            UserRecord userRecord = dslContext.fetchOne(USER, USER.ID.eq(user.getId()));
+            if (userRecord == null) {
+                throw new PersistedEntityException("Record not found!");
+            }
+            userRecord.setFirstName(user.getFirstName() != null ? user.getFirstName() : userRecord.getFirstName());
+            userRecord.setLastName(user.getLastName() != null ? user.getLastName() : userRecord.getLastName());
+            userRecord.setDateOfBirth(user.getDateOfBirth() != null ? user.getDateOfBirth() : userRecord.getDateOfBirth());
+            userRecord.setPhoneNumber(user.getPhoneNumber() != null ? user.getPhoneNumber() : userRecord.getPhoneNumber());
+            userRecord.store();
         } catch (DataAccessException exception) {
             logger.error(exception.getMessage());
             throw new PersistedEntityException(exception.getMessage());

@@ -3,6 +3,7 @@ package service;
 import com.google.inject.Inject;
 import dao.Account;
 import dao.Deposit;
+import dao.PersistedEntity;
 import dao.Transfer;
 import exception.PersistedEntityException;
 import org.jooq.DSLContext;
@@ -66,11 +67,12 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
     public void update(Account account) throws PersistedEntityException, SQLException {
         super.update(account);
         try {
-            dslContext.update(ACCOUNT)
-                    .set(ACCOUNT.IS_BLOCKED, account.isBlocked())
-                    .set(ACCOUNT.USER_ID, account.getUserId())
-                    .where(ACCOUNT.ID.eq(account.getId()))
-                    .execute();
+            AccountRecord accountRecord = dslContext.fetchOne(ACCOUNT, ACCOUNT.ID.eq(account.getId()));
+            if (accountRecord == null) {
+                throw new PersistedEntityException("Record not found!");
+            }
+            accountRecord.setUserId(account.getUserId());
+            accountRecord.store();
         } catch (DataAccessException exception) {
             logger.error(exception.getMessage());
             throw new PersistedEntityException(exception.getMessage());

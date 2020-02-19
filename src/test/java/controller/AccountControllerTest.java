@@ -26,6 +26,7 @@ import service.UserService;
 import static config.RoutingConfiguration.ACCOUNT_ENDPOINT;
 import static config.RoutingConfiguration.DEPOSIT_ENDPOINT;
 import static config.RoutingConfiguration.TRANSFER_ENDPOINT;
+import static controller.ControllerTestUtil.createDummyUser;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.with;
 import static org.eclipse.jetty.http.HttpStatus.Code.BAD_REQUEST;
@@ -45,8 +46,8 @@ public class AccountControllerTest {
     private static final String ACCOUNT_GET_ENDPOINT_FORMAT = ACCOUNT_ENDPOINT + "/%s";
     private static final String USER_ID_FIELD_NAME = "userId";
     private static final String BALANCE_ID_FIELD_NAME = "balance";
-    private static final String BLOCKED_FIELD_NAME = "blocked";
     private static AccountService accountService;
+    private static UserService userService;
     private static DSLContext dslContext;
     private static UUID userId;
 
@@ -57,9 +58,10 @@ public class AccountControllerTest {
         Injector injector = Guice.createInjector(new TestModule());
         dslContext = injector.getInstance(DSLContext.class);
         accountService = injector.getInstance(AccountService.class);
+        userService = injector.getInstance(UserService.class);
 
-        User user = ControllerTestUtil.createDummyUser();
-        injector.getInstance(UserService.class).store(user);
+        User user = createDummyUser();
+        userService.store(user);
         userId = user.getId();
     }
 
@@ -157,19 +159,20 @@ public class AccountControllerTest {
 
     @Test
     @DisplayName("PUT with valid Account Id should successfully update the record")
-    void testPutPasses() {
+    void testPutPasses() throws PersistedEntityException, SQLException {
+        User newUser = createDummyUser();
+        userService.store(newUser);
+
         Account testAccount = new Account();
         testAccount.setBalance(new BigDecimal(3000));
         testAccount.setUserId(userId);
         assertDoesNotThrow(() -> accountService.store(testAccount));
 
-        testAccount.setBlocked(true);
+        testAccount.setUserId(newUser.getId());
         with().body(testAccount).when().request(Method.PUT, ACCOUNT_ENDPOINT)
                 .then().assertThat()
                 .statusCode(OK.getCode())
-                .body(BALANCE_ID_FIELD_NAME, is(3000))
-                .body(USER_ID_FIELD_NAME, is(userId.toString()))
-                .body(BLOCKED_FIELD_NAME, is(true));
+                .body(USER_ID_FIELD_NAME, is(newUser.getId().toString()));
     }
 
     @Test
