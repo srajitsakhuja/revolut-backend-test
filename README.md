@@ -66,7 +66,7 @@ a test database schema.
 - [ ] The update queries should get fired up for only the non-null values in the request body (json).
 - [x] Test ordering should be avoid in the UserControllerTest to achieve test isolation.
 - [x] A bug has been highlighted in AccountControllerTest#testTransferFails (disabled).
-- [ ] Exceptions are not logged.
+- [x] Exceptions are not logged.
 - [x] Db connection parameters are hard-coded. They should be injected as properties.
 - [ ] The code should be checked for check-style, pmd violations.
 - [ ] Transfers/Deposits from and to 'blocked' accounts/users should be prohibited.

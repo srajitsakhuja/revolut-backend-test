@@ -16,12 +16,16 @@ import org.jooq.Results;
 import org.jooq.TableField;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.TableImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class PersistenceService<E extends PersistedEntity, T extends Record, I extends Object> {
     protected DSLContext dslContext;
+    private final Logger logger;
 
     @Inject
-    PersistenceService(DSLContext dslContext) throws SQLException {
+    PersistenceService(DSLContext dslContext) {
+        logger = LoggerFactory.getLogger(PersistenceService.class);
         this.dslContext = dslContext;
     }
 
@@ -36,15 +40,17 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
 
     protected T findById(TableImpl<T> table, I id, TableField<T, I> field) throws PersistedEntityException, SQLException {
         T record;
-
+        String exceptionMessage = "Resource does not exist!";
         try {
             record = dslContext.selectFrom(table).where(field.eq(id)).fetchOne();
-        } catch (DataAccessException e) {
-            throw new PersistedEntityException("Resource does not exist!");
+        } catch (DataAccessException exception) {
+            logger.error(exception.getMessage());
+            throw new PersistedEntityException(exception.getMessage());
         }
 
         if (record == null) {
-            throw new PersistedEntityException("Resource does not exist!");
+            logger.error(exceptionMessage);
+            throw new PersistedEntityException(exceptionMessage);
         }
 
         return record;
@@ -61,16 +67,20 @@ public abstract class PersistenceService<E extends PersistedEntity, T extends Re
             for (Result<Record> result :results) {
                 records.addAll(result);
             }
-        } catch (DataAccessException e) {
-            throw new PersistedEntityException(e.getMessage());
+        } catch (DataAccessException exception) {
+            logger.error(exception.getMessage());
+            throw new PersistedEntityException(exception.getMessage());
         }
 
         return records;
     }
 
     protected void update(E entity) throws PersistedEntityException, SQLException {
+        String exceptionMessage;
         if (entity.getId() == null) {
-            throw new PersistedEntityException("Resource does not exist!");
+            exceptionMessage = "Resource does not exist!";
+            logger.error(exceptionMessage);
+            throw new PersistedEntityException(exceptionMessage);
         }
     }
 }

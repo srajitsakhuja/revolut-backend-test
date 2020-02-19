@@ -11,27 +11,37 @@ import dao.User;
 import exception.PersistedEntityException;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import package_.tables.records.UserRecord;
 
 import static java.time.LocalDate.now;
 import static package_.tables.User.USER;
 
 public class UserService extends PersistenceService<User, UserRecord, UUID> {
+    private final Logger logger;
+
     @Inject
     public UserService(DSLContext dslContext) throws SQLException {
         super(dslContext);
+        logger = LoggerFactory.getLogger(this.getClass());
     }
 
     @Override
     protected void process(User user) throws PersistedEntityException, SQLException {
         UUID guardianId = user.getGuardianId();
+        String exceptionMessage;
         if (isMinor(user.getDateOfBirth())) {
             if (guardianId == null | !isValidGuardian(guardianId) ) {
-                throw new PersistedEntityException("User is a minor; must have a suitable guardian!");
+                exceptionMessage = "User is a minor; must have a suitable guardian!";
+                logger.error(exceptionMessage);
+                throw new PersistedEntityException(exceptionMessage);
             }
         } else {
             if (guardianId != null) {
-                throw new PersistedEntityException("You're a big boy; don't need a guardian");
+                exceptionMessage = "You're a big boy; don't need a guardian";
+                logger.error(exceptionMessage);
+                throw new PersistedEntityException(exceptionMessage);
             }
         }
     }
@@ -48,6 +58,7 @@ public class UserService extends PersistenceService<User, UserRecord, UUID> {
                     user.isBlocked(),
                     user.getGuardianId()).execute();
         } catch (DataAccessException exception) {
+            logger.error(exception.getMessage());
             throw new PersistedEntityException(exception.getMessage());
         }
     }
@@ -77,6 +88,7 @@ public class UserService extends PersistenceService<User, UserRecord, UUID> {
                     .where(USER.ID.eq(user.getId()))
                     .execute();
         } catch (DataAccessException exception) {
+            logger.error(exception.getMessage());
             throw new PersistedEntityException(exception.getMessage());
         }
     }

@@ -3,11 +3,12 @@ package service;
 import com.google.inject.Inject;
 import dao.Account;
 import dao.Deposit;
-import dao.PersistedEntity;
 import dao.Transfer;
 import exception.PersistedEntityException;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import package_.tables.records.AccountRecord;
 
 import java.math.BigDecimal;
@@ -20,9 +21,12 @@ import java.util.stream.Collectors;
 import static package_.Tables.ACCOUNT;
 
 public class AccountService extends PersistenceService<Account, AccountRecord, UUID> {
+    private final Logger logger;
+
     @Inject
     public AccountService(DSLContext dslContext) throws SQLException {
         super(dslContext);
+        logger = LoggerFactory.getLogger(this.getClass());
     }
 
     @Override
@@ -46,8 +50,9 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
                     account.isBlocked(),
                     account.getCreationTime(),
                     account.getUserId()).execute();
-        } catch (DataAccessException e) {
-            throw new PersistedEntityException(e.getMessage());
+        } catch (DataAccessException exception) {
+            logger.error(exception.getMessage());
+            throw new PersistedEntityException(exception.getMessage());
         }
     }
 
@@ -66,6 +71,7 @@ public class AccountService extends PersistenceService<Account, AccountRecord, U
                     .where(ACCOUNT.ID.eq(account.getId()))
                     .execute();
         } catch (DataAccessException exception) {
+            logger.error(exception.getMessage());
             throw new PersistedEntityException(exception.getMessage());
         }
     }
